@@ -16,6 +16,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.example.marketplace.entity.Product;
+import com.example.marketplace.exception.NotFoundException;
 import com.example.marketplace.service.ProductService;
 
 @WebMvcTest(ProductController.class)
@@ -61,5 +62,56 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.length()").value(0));
 
         verify(productService).getAllProducts();
+    }
+
+    @Test
+    void getProductById_ShouldReturnProduct_WhenProductExists() throws Exception {
+        // Given
+        UUID productId = UUID.randomUUID();
+        Product product = new Product(productId, "Laptop", 1499.99, "A powerful laptop", 15);
+        when(productService.findById(productId)).thenReturn(product);
+
+        // When & Then
+        mockMvc.perform(get("/api/products/{id}", productId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(productId.toString()))
+                .andExpect(jsonPath("$.name").value("Laptop"))
+                .andExpect(jsonPath("$.price").value(1499.99))
+                .andExpect(jsonPath("$.stock").value(15));
+
+        verify(productService).findById(productId);
+    }
+
+    @Test
+    void getProductById_ShouldReturn404_WhenProductNotFound() throws Exception {
+        // Given
+        UUID productId = UUID.randomUUID();
+        when(productService.findById(productId)).thenThrow(
+            new NotFoundException("Product not found with ID: " + productId));
+
+        // When & Then
+        mockMvc.perform(get("/api/products/{id}", productId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.message").value("Product not found with ID: " + productId));
+
+        verify(productService).findById(productId);
+    }
+
+    @Test
+    void getProductById_ShouldReturn400_WhenInvalidUUID() throws Exception {
+        // Given
+        String invalidId = "invalid-uuid";
+
+        // When & Then
+        mockMvc.perform(get("/api/products/{id}", invalidId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").value("Invalid product ID format. Please provide a valid UUID."));
+
+        verify(productService, never()).findById(any());
     }
 }
