@@ -14,6 +14,7 @@ import com.example.marketplace.dto.AddToCartRequest;
 import com.example.marketplace.entity.Cart;
 import com.example.marketplace.service.CartService;
 
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -38,7 +39,22 @@ public class CartController {
     public Cart addProductToCart(
     		@PathVariable UUID id,
     		@Valid @RequestBody AddToCartRequest bodyDto) {
-        return cartService.addProductToCart(id, bodyDto.getProductId());
+        return cartService.addProductToCart(id, bodyDto.getProductId(), bodyDto.getQuantity());
+    }
+    
+    @PostMapping("/session/add-product")  
+    public Cart addProductToCartBySession(
+            HttpSession session,
+            @Valid @RequestBody AddToCartRequest bodyDto) {
+        String sessionId = session.getId();
+        Cart cart = cartService.getOrCreateCartBySession(sessionId);
+        return cartService.addProductToCart(cart.getId(), bodyDto.getProductId(), bodyDto.getQuantity());
+    }
+    
+    @GetMapping("/session")
+    public Cart getCartBySession(HttpSession session) {
+        String sessionId = session.getId();
+        return cartService.getOrCreateCartBySession(sessionId);
     }
     
     @DeleteMapping("/{id}/checkout")
