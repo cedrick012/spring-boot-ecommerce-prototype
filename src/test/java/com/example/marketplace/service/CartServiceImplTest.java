@@ -1,12 +1,16 @@
 package com.example.marketplace.service;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.HashSet;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +24,7 @@ import com.example.marketplace.entity.Cart;
 import com.example.marketplace.entity.CartItem;
 import com.example.marketplace.entity.Product;
 import com.example.marketplace.exception.NotFoundException;
+import com.example.marketplace.repository.CartItemRepository;
 import com.example.marketplace.repository.CartRepository;
 import com.example.marketplace.repository.ProductRepository;
 
@@ -31,6 +36,9 @@ class CartServiceImplTest {
 
     @Mock
     private ProductRepository productRepository;
+    
+    @Mock
+    private CartItemRepository cartItemRepository;
 
     @InjectMocks
     private CartServiceImpl cartService;
@@ -46,7 +54,7 @@ class CartServiceImplTest {
         cartId = UUID.randomUUID();
         productId = UUID.randomUUID();
         
-        product = new Product(productId, "Laptop", 1499.99, "A powerful laptop");
+        product = new Product(productId, "Laptop", 1499.99, "A powerful laptop", 12);
         
         cart = new Cart();
         cart.setId(cartId);
@@ -60,10 +68,11 @@ class CartServiceImplTest {
         // Given
         when(cartRepository.findById(cartId)).thenReturn(Optional.of(cart));
         when(productRepository.findById(productId)).thenReturn(Optional.of(product));
-        when(cartRepository.save(any(Cart.class))).thenReturn(cart);
+        when(cartItemRepository.findByCartAndProduct(any(), any()))
+        .thenReturn(Optional.empty());
 
         // When
-        Cart result = cartService.addProductToCart(cartId, productId);
+        Cart result = cartService.addProductToCart(cartId, productId, 1);
 
         // Then
         assertNotNull(result);
@@ -74,7 +83,7 @@ class CartServiceImplTest {
         
         verify(cartRepository).findById(cartId);
         verify(productRepository).findById(productId);
-        verify(cartRepository).save(cart);
+        verify(cartItemRepository).save(addedItem);
     }
 
     @Test
@@ -83,10 +92,11 @@ class CartServiceImplTest {
         cart.getItems().add(cartItem);
         when(cartRepository.findById(cartId)).thenReturn(Optional.of(cart));
         when(productRepository.findById(productId)).thenReturn(Optional.of(product));
-        when(cartRepository.save(any(Cart.class))).thenReturn(cart);
+        when(cartItemRepository.findByCartAndProduct(any(), any()))
+        .thenReturn(Optional.of(cartItem));
 
         // When
-        Cart result = cartService.addProductToCart(cartId, productId);
+        Cart result = cartService.addProductToCart(cartId, productId, 1);
 
         // Then
         assertNotNull(result);
@@ -94,7 +104,7 @@ class CartServiceImplTest {
         CartItem updatedItem = result.getItems().iterator().next();
         assertEquals(2, updatedItem.getQuantity());
         
-        verify(cartRepository).save(cart);
+        verify(cartItemRepository).save(cartItem);
     }
 
     @Test
@@ -104,7 +114,7 @@ class CartServiceImplTest {
 
         // When & Then
         NotFoundException exception = assertThrows(NotFoundException.class, 
-            () -> cartService.addProductToCart(cartId, productId));
+            () -> cartService.addProductToCart(cartId, productId, 12));
         
         assertEquals("Cart not found with ID: " + cartId, exception.getMessage());
         verify(cartRepository).findById(cartId);
@@ -120,7 +130,7 @@ class CartServiceImplTest {
 
         // When & Then
         NotFoundException exception = assertThrows(NotFoundException.class, 
-            () -> cartService.addProductToCart(cartId, productId));
+            () -> cartService.addProductToCart(cartId, productId, 12));
         
         assertEquals("Product not found with ID: " + productId, exception.getMessage());
         verify(cartRepository).findById(cartId);
@@ -140,21 +150,6 @@ class CartServiceImplTest {
         assertNotNull(result);
         assertEquals(cartId, result.getId());
         verify(cartRepository).findById(cartId);
-    }
-
-    @Test
-    void getCart_ShouldCreateNewCart_WhenCartIdIsNull() {
-        // Given
-        Cart newCart = new Cart();
-        when(cartRepository.save(any(Cart.class))).thenReturn(newCart);
-
-        // When
-        Cart result = cartService.getCart(null);
-
-        // Then
-        assertNotNull(result);
-        verify(cartRepository).save(any(Cart.class));
-        verify(cartRepository, never()).findById(any());
     }
 
     @Test

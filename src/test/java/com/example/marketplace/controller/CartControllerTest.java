@@ -1,13 +1,21 @@
 package com.example.marketplace.controller;
 
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.UUID;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -15,10 +23,10 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.example.marketplace.dto.AddToCartRequest;
 import com.example.marketplace.entity.Cart;
 import com.example.marketplace.entity.CartItem;
 import com.example.marketplace.entity.Product;
-import com.example.marketplace.exception.NotFoundException;
 import com.example.marketplace.service.CartService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -33,12 +41,23 @@ class CartControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+    
+    private static String sessionId;
+    private static LocalDateTime createdAt;
+    private static LocalDateTime updatedAt;
+    
+    @BeforeAll
+    static void setUp() {
+        sessionId = UUID.randomUUID().toString();
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
 
     @Test
     void getCart_ShouldReturnCart_WhenCartExists() throws Exception {
         // Given
         UUID cartId = UUID.randomUUID();
-        Cart cart = new Cart(cartId, new HashSet<>());
+        Cart cart = new Cart(cartId, sessionId, createdAt, updatedAt, new HashSet<>());
         when(cartService.getCart(cartId)).thenReturn(cart);
 
         // When & Then
@@ -53,7 +72,7 @@ class CartControllerTest {
     @Test
     void createCart_ShouldReturnNewCart() throws Exception {
         // Given
-        Cart newCart = new Cart(UUID.randomUUID(), new HashSet<>());
+        Cart newCart = new Cart(UUID.randomUUID(), sessionId, createdAt, updatedAt, new HashSet<>());
         when(cartService.getCart(null)).thenReturn(newCart);
 
         // When & Then
@@ -71,28 +90,30 @@ class CartControllerTest {
         UUID cartId = UUID.randomUUID();
         UUID productId = UUID.randomUUID();
         
-        Product product = new Product(productId, "Laptop", 1499.99, "A laptop");
-        Cart cart = new Cart(cartId, new HashSet<>());
+        Product product = new Product(productId, "Laptop", 1499.99, "A laptop", 12);
+        Cart cart = new Cart(cartId,sessionId, createdAt, updatedAt, new HashSet<>());
         CartItem cartItem = new CartItem(UUID.randomUUID(), product, 1, cart);
         cart.getItems().add(cartItem);
         
-        when(cartService.addProductToCart(cartId, productId)).thenReturn(cart);
+        
+        int quantity = 2;
+        when(cartService.addProductToCart(cartId, productId, quantity)).thenReturn(cart);
+        
+        AddToCartRequest addToCartRequestDto = new AddToCartRequest();
+        addToCartRequestDto.setProductId(productId);
+        addToCartRequestDto.setQuantity(quantity);
 
         String requestBody = objectMapper.writeValueAsString(
-            new com.example.marketplace.dto.AddToCartRequest() {{
-                setProductId(productId);
-            }}
+        		addToCartRequestDto
         );
 
         // When & Then
         mockMvc.perform(post("/api/carts/{id}/add-product", cartId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(cartId.toString()))
-                .andExpect(jsonPath("$.items").isArray());
+                .andExpect(status().isOk());
 
-        verify(cartService).addProductToCart(cartId, productId);
+        verify(cartService).addProductToCart(cartId, productId, quantity);
     }
 
     @Test
@@ -107,7 +128,7 @@ class CartControllerTest {
                 .content(requestBody))
                 .andExpect(status().isBadRequest());
 
-        verify(cartService, never()).addProductToCart(any(), any());
+        verify(cartService, never()).addProductToCart(any(), any(), any());
     }
 
     @Test

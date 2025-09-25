@@ -1,8 +1,12 @@
 package com.example.marketplace.controller;
 
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Arrays;
 import java.util.List;
@@ -32,8 +36,8 @@ class ProductControllerTest {
     void getAllProducts_ShouldReturnProducts() throws Exception {
         // Given
         List<Product> products = Arrays.asList(
-            new Product(UUID.randomUUID(), "Laptop", 1499.99, "A powerful laptop"),
-            new Product(UUID.randomUUID(), "Mouse", 25.99, "Wireless mouse")
+            new Product(UUID.randomUUID(), "Laptop", 1499.99, "A powerful laptop", 12),
+            new Product(UUID.randomUUID(), "Mouse", 25.99, "Wireless mouse", 12)
         );
         when(productService.getAllProducts()).thenReturn(products);
 
