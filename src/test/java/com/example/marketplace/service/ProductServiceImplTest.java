@@ -1,7 +1,12 @@
 package com.example.marketplace.service;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
 import java.util.List;
@@ -16,6 +21,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.example.marketplace.entity.Product;
+import com.example.marketplace.exception.NotFoundException;
 import com.example.marketplace.repository.ProductRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -32,8 +38,8 @@ class ProductServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        product1 = new Product(UUID.randomUUID(), "Laptop", 1499.99, "A powerful laptop");
-        product2 = new Product(UUID.randomUUID(), "Mouse", 25.99, "Wireless mouse");
+        product1 = new Product(UUID.randomUUID(), "Laptop", 1499.99, "A powerful laptop", 12);
+        product2 = new Product(UUID.randomUUID(), "Mouse", 25.99, "Wireless mouse", 2);
     }
 
     @Test

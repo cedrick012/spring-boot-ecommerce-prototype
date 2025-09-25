@@ -1,6 +1,6 @@
 class MarketplaceApp {
     constructor() {
-        this.cartId = localStorage.getItem('cartId') || null;
+        // Remove cartId from localStorage since we're using sessions now
         this.products = [];
         this.cart = null;
         this.currentProduct = null;
@@ -8,10 +8,7 @@ class MarketplaceApp {
         this.initializeElements();
         this.attachEventListeners();
         this.loadProducts();
-        
-        if (this.cartId) {
-            this.loadCart();
-        }
+        this.loadCart(); // Load cart by session
     }
 
     initializeElements() {
@@ -79,60 +76,115 @@ class MarketplaceApp {
         `).join('');
     }
 
-    async addToCart(productId) {
-        try {
-            if (!this.cartId) {
-                await this.createCart();
-            }
+    async checkout() {
+        if (!this.cart || !this.cart.id) {
+            this.showNotification('No cart to checkout', 'error');
+            return;
+        }
 
-            const response = await fetch(`/api/carts/${this.cartId}/add-product`, {
+        try {
+            const response = await fetch(`/api/carts/${this.cart.id}/checkout`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) throw new Error('Checkout failed');
+
+            this.showNotification('Checkout successful! Order placed.', 'success');
+            
+            // Reset cart and reload from session
+            this.cart = null;
+            this.updateCartCount();
+            await this.loadCart(); // Reload cart from session
+            this.showProducts();
+        } catch (error) {
+            this.showNotification('Checkout failed', 'error');
+        }
+    }
+
+    async addToCart(productId, quantity = 1) {
+        try {
+            // Disable add to cart buttons during request
+            this.setCartButtonsLoading(true);
+
+            const response = await fetch('/api/carts/session/add-product', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ productId })
+                body: JSON.stringify({ 
+                    productId: productId,
+                    quantity: quantity 
+                })
             });
 
-            if (!response.ok) throw new Error('Failed to add product to cart');
-
-            this.cart = await response.json();
-            this.updateCartCount();
-            this.showNotification('Product added to cart!', 'success');
-        } catch (error) {
-            this.showNotification('Failed to add product to cart', 'error');
-        }
-    }
-
-    async createCart() {
-        try {
-            const response = await fetch('/api/carts', { method: 'POST' });
-            if (!response.ok) throw new Error('Failed to create cart');
-
-            this.cart = await response.json();
-            this.cartId = this.cart.id;
-            localStorage.setItem('cartId', this.cartId);
-        } catch (error) {
-            throw new Error('Failed to create cart');
-        }
-    }
-
-    async loadCart() {
-        try {
-            const response = await fetch(`/api/carts/${this.cartId}`);
             if (!response.ok) {
-                if (response.status === 404) {
-                    this.cartId = null;
-                    localStorage.removeItem('cartId');
-                    this.cart = null;
-                    this.updateCartCount();
-                    return;
+                const errorData = await response.json();
+                // Handle specific error cases
+                if (errorData.message && errorData.message.includes('Insufficient stock')) {
+                    this.showNotification(errorData.message, 'error', 5000);
+                } else {
+                    throw new Error(errorData.message || 'Failed to add product to cart');
                 }
-                throw new Error('Failed to load cart');
+                return;
             }
 
             this.cart = await response.json();
             this.updateCartCount();
+            this.showNotification(`${quantity} item(s) added to cart!`, 'success');
+            
+            // Update stock display if we're on product detail page
+            if (this.currentProduct && this.currentProduct.id === productId) {
+                this.refreshProductStock(productId);
+            }
         } catch (error) {
+            console.error('Error adding to cart:', error);
+            this.showNotification(error.message || 'Failed to add product to cart', 'error');
+        } finally {
+            this.setCartButtonsLoading(false);
+        }
+    }
+
+    async refreshProductStock(productId) {
+        try {
+            const response = await fetch(`/api/products/${productId}`);
+            if (response.ok) {
+                const updatedProduct = await response.json();
+                this.currentProduct = updatedProduct;
+                this.renderProductDetail(); // Re-render with updated stock
+            }
+        } catch (error) {
+            console.error('Failed to refresh product stock:', error);
+        }
+    }
+
+    setCartButtonsLoading(isLoading) {
+        // Disable/enable all add to cart buttons
+        const buttons = document.querySelectorAll('.add-to-cart-btn, .add-to-cart-detail-btn');
+        buttons.forEach(button => {
+            button.disabled = isLoading;
+            if (isLoading) {
+                button.dataset.originalText = button.textContent;
+                button.textContent = 'Adding...';
+                button.classList.add('loading');
+            } else {
+                if (button.dataset.originalText) {
+                    button.textContent = button.dataset.originalText;
+                    delete button.dataset.originalText;
+                }
+                button.classList.remove('loading');
+            }
+        });
+    }
+
+    async loadCart() {
+        try {
+            const response = await fetch('/api/carts/session');
+            if (!response.ok) throw new Error('Failed to load cart');
+
+            this.cart = await response.json();
+            this.updateCartCount();
+        } catch (error) {
+            console.error('Error loading cart:', error);
             this.showNotification('Failed to load cart', 'error');
         }
     }
@@ -284,18 +336,34 @@ class MarketplaceApp {
         const quantity = parseInt(quantityInput.value);
         const maxStock = this.currentProduct.stock;
         let isValid = true;
+        let errorMessage = '';
 
-        if (isNaN(quantity) || quantity < 1) {
-            quantityError.textContent = 'Please enter a valid quantity';
-            isValid = false;
-        } else if (quantity > maxStock) {
-            quantityError.textContent = `Only ${maxStock} items available in stock`;
-            isValid = false;
-        } else {
-            quantityError.textContent = '';
+        // Check for existing items in cart for this product
+        let existingQuantity = 0;
+        if (this.cart && this.cart.items) {
+            const existingItem = this.cart.items.find(item => item.product.id === this.currentProduct.id);
+            if (existingItem) {
+                existingQuantity = existingItem.quantity;
+            }
         }
 
+        const availableStock = maxStock - existingQuantity;
+
+        if (isNaN(quantity) || quantity < 1) {
+            errorMessage = 'Please enter a valid quantity';
+            isValid = false;
+        } else if (quantity > availableStock) {
+            if (existingQuantity > 0) {
+                errorMessage = `Only ${availableStock} more items can be added (${existingQuantity} already in cart)`;
+            } else {
+                errorMessage = `Only ${availableStock} items available in stock`;
+            }
+            isValid = false;
+        }
+
+        // Update UI
         if (quantityError) {
+            quantityError.textContent = errorMessage;
             quantityError.classList.toggle('hidden', isValid);
         }
         if (addToCartBtn) {
@@ -312,14 +380,8 @@ class MarketplaceApp {
         const quantityInput = document.getElementById('quantityInput');
         const quantity = parseInt(quantityInput.value);
 
-        try {
-            for (let i = 0; i < quantity; i++) {
-                await this.addToCart(this.currentProduct.id);
-            }
-            this.showNotification(`${quantity} item(s) added to cart!`, 'success');
-        } catch (error) {
-            this.showNotification('Failed to add items to cart', 'error');
-        }
+        // Use the updated addToCart method with quantity
+        await this.addToCart(this.currentProduct.id, quantity);
     }
 
     formatPrice(price) {
@@ -377,13 +439,13 @@ class MarketplaceApp {
     }
 
     async checkout() {
-        if (!this.cartId) {
+        if (!this.cart || !this.cart.id) {
             this.showNotification('No cart to checkout', 'error');
             return;
         }
 
         try {
-            const response = await fetch(`/api/carts/${this.cartId}/checkout`, {
+            const response = await fetch(`/api/carts/${this.cart.id}/checkout`, {
                 method: 'DELETE'
             });
 
@@ -391,11 +453,10 @@ class MarketplaceApp {
 
             this.showNotification('Checkout successful! Order placed.', 'success');
             
-            // Reset cart
-            this.cartId = null;
+            // Reset cart and reload from session
             this.cart = null;
-            localStorage.removeItem('cartId');
             this.updateCartCount();
+            await this.loadCart(); // Reload cart from session
             this.showProducts();
         } catch (error) {
             this.showNotification('Checkout failed', 'error');
@@ -408,14 +469,15 @@ class MarketplaceApp {
         this.cartCount.textContent = count;
     }
 
-    showNotification(message, type) {
+    showNotification(message, type, duration = 3000) {
         this.notification.textContent = message;
         this.notification.className = `notification ${type}`;
         this.notification.classList.remove('hidden');
 
-        setTimeout(() => {
+        clearTimeout(this.notificationTimeout);
+        this.notificationTimeout = setTimeout(() => {
             this.notification.classList.add('hidden');
-        }, 3000);
+        }, duration);
     }
 
     escapeHtml(text) {
