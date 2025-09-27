@@ -66,14 +66,31 @@ class MarketplaceApp {
                 <div class="product-name">${this.escapeHtml(product.name)}</div>
                 <div class="product-description">${this.escapeHtml(product.description)}</div>
                 <div class="product-price">$${product.price.toFixed(2)}</div>
-                <button class="add-to-cart-btn" onclick="app.addToCart('${product.id}')">
+                <button class="add-to-cart-btn list-btn-padding" data-product-id="${product.id}" onclick="app.addToCartWithButton('${product.id}', event)">
                     Add to Cart
                 </button>
-                <button class="view-details-btn" onclick="app.showProductDetail('${product.id}')">
+                <button class="view-details-btn list-btn-padding" onclick="app.showProductDetail('${product.id}')">
                     View Details
                 </button>
             </div>
         `).join('');
+    }
+
+    async addToCartWithButton(productId, event) {
+        await this.addToCart(productId, 1);
+    }
+
+    async loadCart() {
+        try {
+            const response = await fetch('/api/carts/session');
+            if (!response.ok) throw new Error('Failed to load cart');
+
+            this.cart = await response.json();
+            this.updateCartCount();
+        } catch (error) {
+            console.error('Error loading cart:', error);
+            this.showNotification('Failed to load cart', 'error');
+        }
     }
 
     async checkout() {
@@ -103,9 +120,6 @@ class MarketplaceApp {
 
     async addToCart(productId, quantity = 1) {
         try {
-            // Disable add to cart buttons during request
-            this.setCartButtonsLoading(true);
-
             const response = await fetch('/api/carts/session/add-product', {
                 method: 'POST',
                 headers: {
@@ -139,8 +153,6 @@ class MarketplaceApp {
         } catch (error) {
             console.error('Error adding to cart:', error);
             this.showNotification(error.message || 'Failed to add product to cart', 'error');
-        } finally {
-            this.setCartButtonsLoading(false);
         }
     }
 
@@ -155,25 +167,6 @@ class MarketplaceApp {
         } catch (error) {
             console.error('Failed to refresh product stock:', error);
         }
-    }
-
-    setCartButtonsLoading(isLoading) {
-        // Disable/enable all add to cart buttons
-        const buttons = document.querySelectorAll('.add-to-cart-btn, .add-to-cart-detail-btn');
-        buttons.forEach(button => {
-            button.disabled = isLoading;
-            if (isLoading) {
-                button.dataset.originalText = button.textContent;
-                button.textContent = 'Adding...';
-                button.classList.add('loading');
-            } else {
-                if (button.dataset.originalText) {
-                    button.textContent = button.dataset.originalText;
-                    delete button.dataset.originalText;
-                }
-                button.classList.remove('loading');
-            }
-        });
     }
 
     async loadCart() {
@@ -272,13 +265,13 @@ class MarketplaceApp {
                         </div>
                     </div>
                     
-                    <button class="add-to-cart-detail-btn" id="addToCartDetailBtn" onclick="app.addToCartFromDetail()">
+                    <button class="add-to-cart-btn details-btn-padding" id="addToCartDetailBtn" onclick="app.addToCartFromDetail()">
                         🛒 Add to Cart
                     </button>
                 </div>
             ` : `
                 <div class="purchase-section">
-                    <button class="add-to-cart-detail-btn" disabled>❌ Out of Stock</button>
+                    <button class="add-to-cart-btn" disabled>❌ Out of Stock</button>
                 </div>
             `}
         `;
@@ -379,8 +372,6 @@ class MarketplaceApp {
 
         const quantityInput = document.getElementById('quantityInput');
         const quantity = parseInt(quantityInput.value);
-
-        // Use the updated addToCart method with quantity
         await this.addToCart(this.currentProduct.id, quantity);
     }
 
