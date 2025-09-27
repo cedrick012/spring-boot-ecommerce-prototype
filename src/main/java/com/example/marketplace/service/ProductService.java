@@ -8,4 +8,5 @@ import com.example.marketplace.entity.Product;
 public interface ProductService {
 	List<Product> getAllProducts();
 	Product findById(UUID id);
+	void reduceStock(UUID productId, int quantity);
 }

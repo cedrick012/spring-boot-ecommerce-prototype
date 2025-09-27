@@ -1,12 +1,15 @@
 package com.example.marketplace.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.example.marketplace.dto.CheckoutResult;
 import com.example.marketplace.entity.Cart;
 import com.example.marketplace.entity.CartItem;
 import com.example.marketplace.entity.Product;
@@ -24,10 +27,11 @@ public class CartServiceImpl implements CartService {
     private final CartRepository cartRepository;
     private final ProductRepository productRepository;
     private final CartItemRepository cartItemRepository;
+    private final ProductService productService;
     
     @Override
-    public Cart addProductToCart(UUID cartId, UUID productId, Integer quantity) {
-        if (quantity == null || quantity <= 0) {
+    public Cart addProductToCart(UUID cartId, UUID productId, int quantity) {
+        if (quantity <= 0) {
             throw new IllegalArgumentException("Quantity must be a value greater than 0");
         }
         
@@ -96,10 +100,48 @@ public class CartServiceImpl implements CartService {
     }
     
     @Override
-    public boolean checkout(UUID cartId) {
-        Cart cart = cartRepository.findById(cartId)
-            .orElseThrow(() -> new NotFoundException("Cart not found with ID: " + cartId));
-        cartRepository.delete(cart);
-        return true;
+    @Transactional
+    public CheckoutResult checkout(UUID cartId) {
+        try {
+            Cart cart = cartRepository.findById(cartId)
+                .orElseThrow(() -> new NotFoundException("Cart not found with ID: " + cartId));
+            
+            if (cart.getItems().isEmpty()) {
+                return CheckoutResult.failure("Cannot checkout empty cart");
+            }
+            
+            List<String> errors = new ArrayList<>();
+            
+            // First, validate all items have sufficient stock
+            for (CartItem item : cart.getItems()) {
+                Product product = item.getProduct();
+                if (product.getStock() < item.getQuantity()) {
+                    errors.add(String.format("Insufficient stock for %s. Available: %d, Required: %d", 
+                        product.getName(), product.getStock(), item.getQuantity()));
+                }
+            }
+            
+            // If any stock validation failed, return error
+            if (!errors.isEmpty()) {
+                return CheckoutResult.failure("Checkout failed due to insufficient stock", errors);
+            }
+            
+            // Reduce stock for all items
+            for (CartItem item : cart.getItems()) {
+                productService.reduceStock(item.getProduct().getId(), item.getQuantity());
+            }
+            
+            // Delete the cart after successful stock reduction
+            cartRepository.delete(cart);
+            
+            return CheckoutResult.success("Checkout successful! Your order has been placed.");
+            
+        } catch (NotFoundException e) {
+            return CheckoutResult.failure(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return CheckoutResult.failure("Checkout failed: " + e.getMessage());
+        } catch (Exception e) {
+            return CheckoutResult.failure("An unexpected error occurred during checkout");
+        }
     }
 }
