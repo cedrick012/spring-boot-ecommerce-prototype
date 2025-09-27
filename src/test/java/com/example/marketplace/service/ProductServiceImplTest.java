@@ -1,28 +1,28 @@
 package com.example.marketplace.service;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.example.marketplace.entity.Product;
+import com.example.marketplace.exception.NotFoundException;
+import com.example.marketplace.repository.ProductRepository;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import com.example.marketplace.entity.Product;
-import com.example.marketplace.exception.NotFoundException;
-import com.example.marketplace.repository.ProductRepository;
 
 @ExtendWith(MockitoExtension.class)
 class ProductServiceImplTest {
@@ -101,5 +101,75 @@ class ProductServiceImplTest {
         
         assertEquals("Product not found with ID: " + productId, exception.getMessage());
         verify(productRepository, times(1)).findById(productId);
+    }
+
+    @Test
+    void reduceStock_shouldUpdateStock_whenSufficientStockExists() {
+        // Given
+        UUID productId = product1.getId();
+        int initialStock = product1.getStock();
+        int quantityToReduce = 5;
+        when(productRepository.findById(productId)).thenReturn(Optional.of(product1));
+
+        // When
+        productService.reduceStock(productId, quantityToReduce);
+
+        // Then
+        verify(productRepository, times(1)).findById(productId);
+        verify(productRepository, times(1)).save(product1);
+        assertEquals(initialStock - quantityToReduce, product1.getStock());
+    }
+
+    @Test
+    void reduceStock_shouldThrowException_whenInsufficientStock() {
+        // Given
+        UUID productId = product2.getId();
+        int quantityToReduce = 5; // More than available stock (2)
+        when(productRepository.findById(productId)).thenReturn(Optional.of(product2));
+
+        // When & Then
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+            productService.reduceStock(productId, quantityToReduce));
+
+        assertTrue(exception.getMessage().contains("Insufficient stock"));
+        verify(productRepository, never()).save(any());
+    }
+
+    @Test
+    void reduceStock_shouldThrowException_whenProductNotFound() {
+        // Given
+        UUID nonExistentProductId = UUID.randomUUID();
+        when(productRepository.findById(nonExistentProductId)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThrows(NotFoundException.class, () ->
+            productService.reduceStock(nonExistentProductId, 1));
+        verify(productRepository, never()).save(any());
+    }
+
+    @Test
+    void reduceStock_shouldThrowException_whenQuantityIsZero() {
+        // Given
+        UUID productId = product1.getId();
+
+        // When & Then
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+            productService.reduceStock(productId, 0));
+
+        assertEquals("Quantity to reduce must be greater than 0", exception.getMessage());
+        verify(productRepository, never()).save(any());
+    }
+
+    @Test
+    void reduceStock_shouldThrowException_whenQuantityIsNegative() {
+        // Given
+        UUID productId = product1.getId();
+
+        // When & Then
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+            productService.reduceStock(productId, -1));
+
+        assertEquals("Quantity to reduce must be greater than 0", exception.getMessage());
+        verify(productRepository, never()).save(any());
     }
 }
