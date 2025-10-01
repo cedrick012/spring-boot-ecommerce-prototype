@@ -9,10 +9,10 @@ import lombok.Data;
 
 @Data
 public class AddToCartRequest {
-	@NotNull(message="Product id can not be null")
+	@NotNull(message="商品IDはNULLにできません。")
 	private UUID productId;
 	
-	@Min(value = 1, message = "Quantity must be at least 1")
-	@Max(value = 999, message = "Quantity cannot exceed 999")
+	@Min(value = 1, message = "数量は1以上である必要があります。")
+	@Max(value = 999, message = "数量は999を超過することはできません。")
 	private int quantity = 1; // Default quantity is 1
 }

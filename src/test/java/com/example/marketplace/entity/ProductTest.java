@@ -34,7 +34,7 @@ class ProductTest {
         Product product = new Product(UUID.randomUUID(), " ", 99.99, "A description", 10);
         Set<ConstraintViolation<Product>> violations = validator.validate(product);
         assertFalse(violations.isEmpty());
-        assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("Product name cannot be blank")));
+        assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("商品名は空欄にできません。")));
     }
 
     @Test
@@ -42,7 +42,7 @@ class ProductTest {
         Product product = new Product(UUID.randomUUID(), "Product", 0.0, "A description", 10);
         Set<ConstraintViolation<Product>> violations = validator.validate(product);
         assertFalse(violations.isEmpty());
-        assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("Price must be greater than 0")));
+        assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("価格は0より大きい値である必要があります。")));
     }
 
     @Test
@@ -50,6 +50,6 @@ class ProductTest {
         Product product = new Product(UUID.randomUUID(), "Product", 99.99, "A description", -1);
         Set<ConstraintViolation<Product>> violations = validator.validate(product);
         assertFalse(violations.isEmpty());
-        assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("Stock cannot be negative")));
+        assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("在庫をマイナスにすることはできません。")));
     }
 }

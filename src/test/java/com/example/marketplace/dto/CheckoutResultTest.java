@@ -13,7 +13,7 @@ class CheckoutResultTest {
     @Test
     void success_shouldCreateSuccessfulResult() {
         // Given
-        String message = "Order placed successfully.";
+        String message = "ご注文が正常に完了しました。";
 
         // When
         CheckoutResult result = CheckoutResult.success(message);
@@ -27,8 +27,8 @@ class CheckoutResultTest {
     @Test
     void failure_withMessageAndErrors_shouldCreateFailedResult() {
         // Given
-        String message = "Checkout failed due to stock issues.";
-        List<String> errors = List.of("Item A is out of stock.", "Only 2 of Item B are available.");
+        String message = "在庫の問題により、チェックアウトに失敗しました。";
+        List<String> errors = List.of("商品Aは在庫切れです。", "商品Bの在庫は残り2点です。");
 
         // When
         CheckoutResult result = CheckoutResult.failure(message, errors);
@@ -42,7 +42,7 @@ class CheckoutResultTest {
     @Test
     void failure_withMessageOnly_shouldCreateFailedResult() {
         // Given
-        String message = "An unexpected error occurred.";
+        String message = "予期せぬエラーが発生しました。";
 
         // When
         CheckoutResult result = CheckoutResult.failure(message);

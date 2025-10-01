@@ -48,7 +48,7 @@ class AddToCartRequestTest {
         Set<ConstraintViolation<AddToCartRequest>> violations = validator.validate(request);
 
         assertFalse(violations.isEmpty());
-        assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("Product id can not be null")));
+        assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("商品IDはNULLにできません。")));
     }
 
     @Test
@@ -60,7 +60,7 @@ class AddToCartRequestTest {
         Set<ConstraintViolation<AddToCartRequest>> violations = validator.validate(request);
 
         assertFalse(violations.isEmpty());
-        assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("Quantity must be at least 1")));
+        assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("数量は1以上である必要があります。")));
     }
 
     @Test
@@ -72,6 +72,6 @@ class AddToCartRequestTest {
         Set<ConstraintViolation<AddToCartRequest>> violations = validator.validate(request);
 
         assertFalse(violations.isEmpty());
-        assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("Quantity cannot exceed 999")));
+        assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("数量は999を超過することはできません。")));
     }
 }

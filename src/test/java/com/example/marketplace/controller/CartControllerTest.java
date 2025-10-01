@@ -76,7 +76,7 @@ class CartControllerTest {
 
     @Test
     void getCart_shouldReturnNotFound_whenCartDoesNotExist() throws Exception {
-        when(cartService.getCart(cartId)).thenThrow(new NotFoundException("Cart not found"));
+        when(cartService.getCart(cartId)).thenThrow(new NotFoundException("カートが見つかりません。"));
 
         mockMvc.perform(get("/api/carts/{id}", cartId))
             .andExpect(status().isNotFound());
@@ -159,7 +159,7 @@ class CartControllerTest {
 
     @Test
     void checkout_shouldReturnBadRequest_whenCheckoutFails() throws Exception {
-    	String responseMessage = "Insufficient stock";
+    	String responseMessage = "在庫不足です。";
         when(cartService.checkout(cartId)).thenReturn(CheckoutResult.failure(responseMessage));
 
         mockMvc.perform(delete("/api/carts/{id}/checkout", cartId))
@@ -171,7 +171,7 @@ class CartControllerTest {
 
     @Test
     void checkout_shouldReturnNotFound_whenCartDoesNotExist() throws Exception {
-        when(cartService.checkout(cartId)).thenThrow(new NotFoundException("Cart not found"));
+        when(cartService.checkout(cartId)).thenThrow(new NotFoundException("カートが見つかりません。"));
 
         mockMvc.perform(delete("/api/carts/{id}/checkout", cartId))
             .andExpect(status().isNotFound());

@@ -34,7 +34,7 @@ public class Cart {
 	@UuidGenerator
 	private UUID id;
 	
-	@NotBlank(message = "Session ID cannot be blank")
+	@NotBlank(message = "セッションIDは空欄にできません。")
 	@Column(name = "session_id", nullable = false)
 	private String sessionId;
 	

@@ -27,7 +27,7 @@ public class GlobalExceptionHandler {
 
         ErrorResponse errorResponse = new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
-                "Validation failed for one or more fields.",
+                "1つ以上の項目で入力内容の検証に失敗しました。",
                 errors
         );
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
@@ -58,7 +58,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatch(MethodArgumentTypeMismatchException ex) {
         String message = "Invalid parameter format";
         if (ex.getName().equals("id")) {
-            message = "Invalid product ID format. Please provide a valid UUID.";
+            message = "商品IDの形式が無効です。有効なUUIDを指定してください。";
         }
         
         ErrorResponse errorResponse = new ErrorResponse(
@@ -74,7 +74,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
         ErrorResponse errorResponse = new ErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "An unexpected error occurred.",
+                "予期せぬエラーが発生しました。",
                 ex.getMessage()
         );
         return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);

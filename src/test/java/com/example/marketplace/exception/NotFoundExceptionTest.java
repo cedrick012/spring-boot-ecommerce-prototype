@@ -10,7 +10,7 @@ class NotFoundExceptionTest {
     @Test
     void testConstructorWithMessage() {
         // Given
-        String errorMessage = "The requested resource was not found.";
+        String errorMessage = "要求されたリソースが見つかりませんでした。";
 
         // When
         NotFoundException exception = new NotFoundException(errorMessage);

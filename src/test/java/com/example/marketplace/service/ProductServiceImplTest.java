@@ -99,7 +99,7 @@ class ProductServiceImplTest {
         NotFoundException exception = assertThrows(NotFoundException.class, 
             () -> productService.findById(productId));
         
-        assertEquals("Product not found with ID: " + productId, exception.getMessage());
+        assertEquals(productId + " の商品が見つかりません。", exception.getMessage());
         verify(productRepository, times(1)).findById(productId);
     }
 
@@ -131,7 +131,7 @@ class ProductServiceImplTest {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
             productService.reduceStock(productId, quantityToReduce));
 
-        assertTrue(exception.getMessage().contains("Insufficient stock"));
+        assertTrue(exception.getMessage().contains("在庫不足です。"));
         verify(productRepository, never()).save(any());
     }
 
@@ -156,7 +156,7 @@ class ProductServiceImplTest {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
             productService.reduceStock(productId, 0));
 
-        assertEquals("Quantity to reduce must be greater than 0", exception.getMessage());
+        assertEquals("削減する数量は、0より大きい値である必要があります。", exception.getMessage());
         verify(productRepository, never()).save(any());
     }
 
@@ -169,7 +169,7 @@ class ProductServiceImplTest {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
             productService.reduceStock(productId, -1));
 
-        assertEquals("Quantity to reduce must be greater than 0", exception.getMessage());
+        assertEquals("削減する数量は、0より大きい値である必要があります。", exception.getMessage());
         verify(productRepository, never()).save(any());
     }
 }

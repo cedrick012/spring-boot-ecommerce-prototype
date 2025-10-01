@@ -29,15 +29,15 @@ public class CartItem {
 	@UuidGenerator
 	private UUID id;
 	
-	@NotNull(message = "Product must be provided to create a cartItem")
+	@NotNull(message = "カート項目を作成するには、商品が必要です。")
 	@ManyToOne
 	@JoinColumn(name="product_id")
 	private Product product;
 	
-	@Min(value = 1, message = "Quantity must be greater than 0")
+	@Min(value = 1, message = "数量は0より大きい値である必要があります。")
 	private int quantity;
 	
-	@NotNull(message = "Cart must be provided to create a cartItem")
+	@NotNull(message = "カート項目を作成するには、カートが必要です。")
 	@ManyToOne
 	@JoinColumn(name="cart_id")
 	@JsonBackReference

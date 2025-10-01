@@ -42,7 +42,7 @@ class MarketplaceApp {
 
     async loadProducts() {
         try {
-            this.productsList.innerHTML = '<div class="loading">Loading products...</div>';
+            this.productsList.innerHTML = '<div class="loading">製品を読み込んでいます...</div>';
             
             const response = await fetch('/api/products');
             if (!response.ok) throw new Error('Failed to load products');
@@ -50,14 +50,14 @@ class MarketplaceApp {
             this.products = await response.json();
             this.renderProducts();
         } catch (error) {
-            this.showNotification('Failed to load products', 'error');
-            this.productsList.innerHTML = '<div class="loading">Failed to load products</div>';
+            this.showNotification('製品の読み込みに失敗しました', 'error');
+            this.productsList.innerHTML = '<div class="loading">製品の読み込みに失敗しました</div>';
         }
     }
 
     renderProducts() {
         if (this.products.length === 0) {
-            this.productsList.innerHTML = '<div class="loading">No products available</div>';
+            this.productsList.innerHTML = '<div class="loading">利用可能な製品がありません</div>';
             return;
         }
 
@@ -67,10 +67,10 @@ class MarketplaceApp {
                 <div class="product-description">${this.escapeHtml(product.description)}</div>
                 <div class="product-price">$${product.price.toFixed(2)}</div>
                 <button class="add-to-cart-btn list-btn-padding" data-product-id="${product.id}" onclick="app.addToCartWithButton('${product.id}', event)">
-                    Add to Cart
+                    カートに追加
                 </button>
                 <button class="view-details-btn list-btn-padding" onclick="app.showProductDetail('${product.id}')">
-                    View Details
+                    詳細を見る
                 </button>
             </div>
         `).join('');
@@ -89,13 +89,13 @@ class MarketplaceApp {
             this.updateCartCount();
         } catch (error) {
             console.error('Error loading cart:', error);
-            this.showNotification('Failed to load cart', 'error');
+            this.showNotification('カートの読み込みに失敗しました', 'error');
         }
     }
 
     async checkout() {
         if (!this.cart || !this.cart.id) {
-            this.showNotification('No cart to checkout', 'error');
+            this.showNotification('チェックアウトするカートがありません', 'error');
             return;
         }
 
@@ -106,7 +106,7 @@ class MarketplaceApp {
 
             if (!response.ok) throw new Error('Checkout failed');
 
-            this.showNotification('Checkout successful! Order placed.', 'success');
+            this.showNotification('チェックアウトが完了しました。ご注文ありがとうございます。', 'success');
             
             // Reset cart and reload from session
             this.cart = null;
@@ -114,7 +114,7 @@ class MarketplaceApp {
             await this.loadCart(); // Reload cart from session
             this.showProducts();
         } catch (error) {
-            this.showNotification('Checkout failed', 'error');
+            this.showNotification('チェックアウトに失敗しました', 'error');
         }
     }
 
@@ -144,7 +144,7 @@ class MarketplaceApp {
 
             this.cart = await response.json();
             this.updateCartCount();
-            this.showNotification(`${quantity} item(s) added to cart!`, 'success');
+            this.showNotification(`${quantity}個の商品をカートに追加しました！`, 'success');
             
             // Update stock display if we're on product detail page
             if (this.currentProduct && this.currentProduct.id === productId) {
@@ -152,7 +152,7 @@ class MarketplaceApp {
             }
         } catch (error) {
             console.error('Error adding to cart:', error);
-            this.showNotification(error.message || 'Failed to add product to cart', 'error');
+            this.showNotification(error.message || '商品をカートに追加できませんでした', 'error');
         }
     }
 
@@ -178,13 +178,13 @@ class MarketplaceApp {
             this.updateCartCount();
         } catch (error) {
             console.error('Error loading cart:', error);
-            this.showNotification('Failed to load cart', 'error');
+            this.showNotification('カートの読み込みに失敗しました', 'error');
         }
     }
 
     async showProductDetail(productId) {
         try {
-            this.productDetail.innerHTML = '<div class="loading">Loading product details...</div>';
+            this.productDetail.innerHTML = '<div class="loading">製品詳細を読み込んでいます...</div>';
             this.hideAllSections();
             this.productDetailSection.classList.remove('hidden');
 
@@ -194,9 +194,9 @@ class MarketplaceApp {
                     this.productDetail.innerHTML = `
                         <div class="error-page">
                             <div class="error-icon">🔍</div>
-                            <h3>Product Not Found</h3>
-                            <p>The product you're looking for doesn't exist or has been removed.</p>
-                            <button class="retry-btn" onclick="app.showProducts()">Back to Products</button>
+                            <h3>商品が見つかりません。</h3>
+                            <p>お探しの商品は存在しないか、削除された可能性があります。</p>
+                            <button class="retry-btn" onclick="app.showProducts()">製品一覧に戻る</button>
                         </div>
                     `;
                     return;
@@ -208,12 +208,12 @@ class MarketplaceApp {
             this.renderProductDetail();
         } catch (error) {
             console.error('Error loading product detail:', error);
-            this.showNotification('Failed to load product details', 'error');
+            this.showNotification('製品詳細の読み込みに失敗しました', 'error');
             this.productDetail.innerHTML = `
                 <div class="error-page">
-                    <h3>Error Loading Product</h3>
-                    <p>Unable to load product details. Please try again.</p>
-                    <button class="retry-btn" onclick="app.showProducts()">Back to Products</button>
+                    <h3>製品の読み込みエラー</h3>
+                    <p>製品詳細を読み込めませんでした。もう一度お試しください。</p>
+                    <button class="retry-btn" onclick="app.showProducts()">製品一覧に戻る</button>
                 </div>
             `;
         }
@@ -239,7 +239,7 @@ class MarketplaceApp {
             ${!isOutOfStock ? `
                 <div class="purchase-section">
                     <div class="quantity-section">
-                        <label class="quantity-label">Quantity:</label>
+                        <label class="quantity-label">数量:</label>
                         <div class="quantity-controls">
                             <button class="quantity-btn" onclick="app.decrementQuantity()">−</button>
                             <input type="number" id="quantityInput" class="quantity-input" 
@@ -252,26 +252,26 @@ class MarketplaceApp {
                     
                     <div class="price-summary">
                         <div class="price-row">
-                            <span>Unit Price:</span>
+                            <span>単価:</span>
                             <span>$${this.formatPrice(product.price)}</span>
                         </div>
                         <div class="price-row">
-                            <span>Quantity:</span>
+                            <span>数量:</span>
                             <span id="summaryQuantity">1</span>
                         </div>
                         <div class="price-row price-total">
-                            <span>Total:</span>
+                            <span>合計:</span>
                             <span id="summaryTotal">$${this.formatPrice(product.price)}</span>
                         </div>
                     </div>
                     
                     <button class="add-to-cart-btn details-btn-padding" id="addToCartDetailBtn" onclick="app.addToCartFromDetail()">
-                        🛒 Add to Cart
+                        🛒 カートに追加
                     </button>
                 </div>
             ` : `
                 <div class="purchase-section">
-                    <button class="add-to-cart-btn" disabled>❌ Out of Stock</button>
+                    <button class="add-to-cart-btn" disabled>❌ 在庫切れ</button>
                 </div>
             `}
         `;
@@ -279,11 +279,11 @@ class MarketplaceApp {
 
     getStockStatus(stock) {
         if (stock === 0) {
-            return { class: 'stock-out-of-stock', message: 'Out of Stock' };
+            return { class: 'stock-out-of-stock', message: '在庫切れ' };
         } else if (stock <= 5) {
-            return { class: 'stock-low-stock', message: `Only ${stock} left in stock!` };
+            return { class: 'stock-low-stock', message: `在庫残りわずか ${stock} 点` };
         } else {
-            return { class: 'stock-in-stock', message: `${stock} in stock` };
+            return { class: 'stock-in-stock', message: `在庫あり ${stock} 点` };
         }
     }
 
@@ -343,13 +343,13 @@ class MarketplaceApp {
         const availableStock = maxStock - existingQuantity;
 
         if (isNaN(quantity) || quantity < 1) {
-            errorMessage = 'Please enter a valid quantity';
+            errorMessage = '有効な数量を入力してください';
             isValid = false;
         } else if (quantity > availableStock) {
             if (existingQuantity > 0) {
-                errorMessage = `Only ${availableStock} more items can be added (${existingQuantity} already in cart)`;
+                errorMessage = `追加できるのはあと ${availableStock} 点のみです (カートに ${existingQuantity} 点あり)`;
             } else {
-                errorMessage = `Only ${availableStock} items available in stock`;
+                errorMessage = `在庫は ${availableStock} 点のみです`;
             }
             isValid = false;
         }
@@ -392,7 +392,7 @@ class MarketplaceApp {
 
     showCart() {
         if (!this.cart || !this.cart.items || this.cart.items.length === 0) {
-            this.cartItems.innerHTML = '<div class="empty-cart">Your cart is empty</div>';
+            this.cartItems.innerHTML = '<div class="empty-cart">カートは空です</div>';
         } else {
             this.renderCart();
         }
@@ -412,12 +412,12 @@ class MarketplaceApp {
                         <div class="cart-item-name">${this.escapeHtml(item.product.name)}</div>
                         <div class="cart-item-price">$${item.product.price.toFixed(2)} each</div>
                     </div>
-                    <div class="cart-item-quantity">Qty: ${item.quantity}</div>
+                    <div class="cart-item-quantity">数量: ${item.quantity}</div>
                 </div>
             `).join('')}
             <div class="cart-item" style="background: #ecf0f1; font-weight: bold;">
                 <div class="cart-item-info">
-                    <div class="cart-item-name">Total</div>
+                    <div class="cart-item-name">合計</div>
                 </div>
                 <div class="cart-item-price" style="font-size: 1.2rem;">$${total.toFixed(2)}</div>
             </div>
@@ -431,7 +431,7 @@ class MarketplaceApp {
 
     async checkout() {
         if (!this.cart || !this.cart.id) {
-            this.showNotification('No cart to checkout', 'error');
+            this.showNotification('チェックアウトするカートがありません', 'error');
             return;
         }
 
@@ -442,7 +442,7 @@ class MarketplaceApp {
 
             if (!response.ok) throw new Error('Checkout failed');
 
-            this.showNotification('Checkout successful! Order placed.', 'success');
+            this.showNotification('チェックアウトが完了しました。ご注文ありがとうございます。', 'success');
             
             // Reset cart and reload from session
             this.cart = null;
@@ -450,7 +450,7 @@ class MarketplaceApp {
             await this.loadCart(); // Reload cart from session
             this.showProducts();
         } catch (error) {
-            this.showNotification('Checkout failed', 'error');
+            this.showNotification('チェックアウトに失敗しました', 'error');
         }
     }
 

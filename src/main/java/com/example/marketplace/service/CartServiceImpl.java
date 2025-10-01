@@ -32,14 +32,14 @@ public class CartServiceImpl implements CartService {
     @Override
     public Cart addProductToCart(UUID cartId, UUID productId, int quantity) {
         if (quantity <= 0) {
-            throw new IllegalArgumentException("Quantity must be a value greater than 0");
+            throw new IllegalArgumentException("数量は0より大きい値である必要があります。");
         }
         
         Cart cart = cartRepository.findById(cartId)
-            .orElseThrow(() -> new NotFoundException("Cart not found with ID: " + cartId));
+            .orElseThrow(() -> new NotFoundException(cartId + " のカートが見つかりません。"));
         
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new NotFoundException("Product not found with ID: " + productId));
+                .orElseThrow(() -> new NotFoundException(productId + " の商品が見つかりません。"));
         
         Optional<CartItem> existingCartItem = cartItemRepository.findByCartAndProduct(cart, product);
 
@@ -47,8 +47,8 @@ public class CartServiceImpl implements CartService {
         int currentCartItemQuantity = existingCartItem.map(CartItem::getQuantity).orElse(0);
         
         if (currentCartItemQuantity + quantity > product.getStock()) {
-            throw new IllegalArgumentException("Insufficient stock. Available: " + 
-                (product.getStock() - currentCartItemQuantity) + ", Requested: " + quantity);
+            throw new IllegalArgumentException("在庫不足です。在庫: " + 
+                (product.getStock() - currentCartItemQuantity) + ", ご要望: " + quantity);
         }
 
         if (existingCartItem.isPresent()) {
@@ -93,10 +93,10 @@ public class CartServiceImpl implements CartService {
     @Override
     public Cart getCart(UUID cartId) {
         if (cartId == null) {
-            throw new IllegalArgumentException("Cart ID cannot be null");
+            throw new IllegalArgumentException("カートIDはNULLにできません。");
         }
         return cartRepository.findById(cartId)
-            .orElseThrow(() -> new NotFoundException("Cart not found with ID: " + cartId));
+            .orElseThrow(() -> new NotFoundException(cartId + " のカートが見つかりません。"));
     }
     
     @Override
@@ -104,10 +104,10 @@ public class CartServiceImpl implements CartService {
     public CheckoutResult checkout(UUID cartId) {
         try {
             Cart cart = cartRepository.findById(cartId)
-                .orElseThrow(() -> new NotFoundException("Cart not found with ID: " + cartId));
+                .orElseThrow(() -> new NotFoundException(cartId + " のカートが見つかりません。"));
             
             if (cart.getItems().isEmpty()) {
-                return CheckoutResult.failure("Cannot checkout empty cart");
+                return CheckoutResult.failure("空のカートは精算できません。");
             }
             
             List<String> errors = new ArrayList<>();
@@ -116,14 +116,14 @@ public class CartServiceImpl implements CartService {
             for (CartItem item : cart.getItems()) {
                 Product product = item.getProduct();
                 if (product.getStock() < item.getQuantity()) {
-                    errors.add(String.format("Insufficient stock for %s. Available: %d, Required: %d", 
+                    errors.add(String.format("%s の在庫が不足しています。在庫数: %d, 必要数: %d", 
                         product.getName(), product.getStock(), item.getQuantity()));
                 }
             }
             
             // If any stock validation failed, return error
             if (!errors.isEmpty()) {
-                return CheckoutResult.failure("Checkout failed due to insufficient stock", errors);
+                return CheckoutResult.failure("在庫不足のため、精算に失敗しました。", errors);
             }
             
             // Reduce stock for all items
@@ -134,14 +134,14 @@ public class CartServiceImpl implements CartService {
             // Delete the cart after successful stock reduction
             cartRepository.delete(cart);
             
-            return CheckoutResult.success("Checkout successful! Your order has been placed.");
+            return CheckoutResult.success("精算が完了しました！ご注文が確定されました。");
             
         } catch (NotFoundException e) {
             return CheckoutResult.failure(e.getMessage());
         } catch (IllegalArgumentException e) {
-            return CheckoutResult.failure("Checkout failed: " + e.getMessage());
+            return CheckoutResult.failure("精算に失敗しました: " + e.getMessage());
         } catch (Exception e) {
-            return CheckoutResult.failure("An unexpected error occurred during checkout");
+            return CheckoutResult.failure("精算中に予期せぬエラーが発生しました。");
         }
     }
 }
