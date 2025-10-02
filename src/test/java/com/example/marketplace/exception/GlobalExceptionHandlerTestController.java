@@ -25,12 +25,12 @@ public class GlobalExceptionHandlerTestController {
 
     @GetMapping("/illegal-argument")
     public void triggerIllegalArgumentException() {
-        throw new IllegalArgumentException("Illegal argument provided");
+        throw new IllegalArgumentException("無効な引数が提供されました。");
     }
 
     @GetMapping("/not-found")
     public void triggerNotFoundException() {
-        throw new NotFoundException("Test resource not found");
+        throw new NotFoundException("テスト用リソースが見つかりません。");
     }
 
     @GetMapping("/type-mismatch/{id}")
@@ -40,6 +40,6 @@ public class GlobalExceptionHandlerTestController {
 
     @GetMapping("/generic")
     public void triggerGenericException() throws Exception {
-        throw new Exception("A generic error occurred");
+        throw new Exception("一般的なエラーが発生しました。");
     }
 }

@@ -25,14 +25,14 @@ public class Product {
 	@UuidGenerator
 	private UUID id;
 
-	@NotBlank(message = "Product name cannot be blank")
+	@NotBlank(message = "商品名は空欄にできません。")
 	private String name;
 
-	@Min(value = 1, message = "Price must be greater than 0")
+	@Min(value = 1, message = "価格は0より大きい値である必要があります。")
 	private double price;
 
 	private String description;
 
-	@Min(value = 0, message = "Stock cannot be negative")
+	@Min(value = 0, message = "在庫をマイナスにすることはできません。")
 	private int stock;
 }

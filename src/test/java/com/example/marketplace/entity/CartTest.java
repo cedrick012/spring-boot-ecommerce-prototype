@@ -44,7 +44,7 @@ class CartTest {
         Set<ConstraintViolation<Cart>> violations = validator.validate(cart);
 
         assertFalse(violations.isEmpty());
-        assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("Session ID cannot be blank")));
+        assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("セッションIDは空欄にできません。")));
     }
 
     @Test

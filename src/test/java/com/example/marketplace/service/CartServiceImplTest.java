@@ -106,7 +106,7 @@ class CartServiceImplTest {
     void addProductToCart_shouldThrowException_whenQuantityIsZero() {
         Exception exception = assertThrows(IllegalArgumentException.class, () ->
             cartService.addProductToCart(cartId, productId, 0));
-        assertEquals("Quantity must be a value greater than 0", exception.getMessage());
+        assertEquals("数量は0より大きい値である必要があります。", exception.getMessage());
     }
 
     @Test
@@ -132,7 +132,7 @@ class CartServiceImplTest {
 
         Exception exception = assertThrows(IllegalArgumentException.class, () ->
             cartService.addProductToCart(cartId, productId, 10));
-        assertTrue(exception.getMessage().contains("Insufficient stock"));
+        assertTrue(exception.getMessage().contains("在庫不足です。"));
     }
 
     // Tests for getOrCreateCartBySession
@@ -204,7 +204,7 @@ class CartServiceImplTest {
         when(cartRepository.findById(cartId)).thenReturn(Optional.of(cart));
         CheckoutResult result = cartService.checkout(cartId);
         assertFalse(result.isSuccess());
-        assertEquals("Cannot checkout empty cart", result.getMessage());
+        assertEquals("空のカートは精算できません。", result.getMessage());
     }
 
     @Test
@@ -212,7 +212,7 @@ class CartServiceImplTest {
         when(cartRepository.findById(cartId)).thenReturn(Optional.empty());
         CheckoutResult result = cartService.checkout(cartId);
         assertFalse(result.isSuccess());
-        assertTrue(result.getMessage().contains("Cart not found"));
+        assertTrue(result.getMessage().contains("カートが見つかりません。"));
     }
 
     @Test
@@ -230,7 +230,7 @@ class CartServiceImplTest {
         CheckoutResult result = cartService.checkout(cartId);
 
         assertFalse(result.isSuccess());
-        assertTrue(result.getMessage().contains("insufficient stock"));
+        assertTrue(result.getMessage().contains("在庫不足のため、精算に失敗しました。"));
         assertEquals(1, result.getErrors().size());
         verify(productService, never()).reduceStock(any(), any(Integer.class));
         verify(cartRepository, never()).delete(any());

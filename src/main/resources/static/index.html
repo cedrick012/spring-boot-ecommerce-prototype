@@ -3,32 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marketplace</title>
+    <title>マーケットプレイス</title>
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🛒 Marketplace</h1>
+            <h1>🛒 マーケットプレイス</h1>
             <div class="cart-summary">
                 <button id="viewCartBtn" class="cart-btn">
-                    Cart (<span id="cartCount">0</span>)
+                    カート (<span id="cartCount">0</span>)
                 </button>
             </div>
         </header>
 
         <main>
             <section id="productsSection">
-                <h2>Products</h2>
+                <h2>商品</h2>
                 <div id="productsList" class="products-grid">
-                    <div class="loading">Loading products...</div>
+                    <div class="loading">商品を読み込み中です...</div>
                 </div>
             </section>
 
             <section id="productDetailSection" class="hidden">
                 <div class="breadcrumb">
-                    <a href="#" id="backToProductsFromDetail" class="breadcrumb-link">← Back to Products</a>
+                    <a href="#" id="backToProductsFromDetail" class="breadcrumb-link">← 商品一覧へ戻る</a>
                 </div>
                 <div id="productDetail" class="product-detail">
                     <!-- Product detail will be loaded here -->
@@ -36,13 +36,13 @@
             </section>
 
             <section id="cartSection" class="hidden">
-                <h2>Shopping Cart</h2>
+                <h2>ショッピングカート</h2>
                 <div id="cartItems">
                     <!-- Cart items will be loaded here -->
                 </div>
                 <div class="cart-actions">
-                    <button id="checkoutBtn" class="btn-primary">Checkout</button>
-                    <button id="backToProductsBtn" class="btn-secondary">Back to Products</button>
+                    <button id="checkoutBtn" class="btn-primary">精算へ</button>
+                    <button id="backToProductsBtn" class="btn-secondary">商品一覧へ戻る</button>
                 </div>
             </section>
         </main>

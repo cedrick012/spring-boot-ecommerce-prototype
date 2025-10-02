@@ -31,9 +31,9 @@ class GlobalExceptionHandlerTest {
                 .content(invalidRequest))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.status", is(400)))
-            .andExpect(jsonPath("$.message", is("Validation failed for one or more fields.")))
-            .andExpect(jsonPath("$.details.productId", is("Product id can not be null")))
-            .andExpect(jsonPath("$.details.quantity", is("Quantity must be at least 1")));
+            .andExpect(jsonPath("$.message", is("1つ以上の項目で入力内容の検証に失敗しました。")))
+            .andExpect(jsonPath("$.details.productId", is("商品IDはNULLにできません。")))
+            .andExpect(jsonPath("$.details.quantity", is("数量は1以上である必要があります。")));
     }
 
     @Test
@@ -41,7 +41,7 @@ class GlobalExceptionHandlerTest {
         mockMvc.perform(get("/test-exceptions/illegal-argument"))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.status", is(400)))
-            .andExpect(jsonPath("$.message", is("Illegal argument provided")));
+            .andExpect(jsonPath("$.message", is("無効な引数が提供されました。")));
     }
 
     @Test
@@ -49,7 +49,7 @@ class GlobalExceptionHandlerTest {
         mockMvc.perform(get("/test-exceptions/not-found"))
             .andExpect(status().isNotFound())
             .andExpect(jsonPath("$.status", is(404)))
-            .andExpect(jsonPath("$.message", is("Test resource not found")));
+            .andExpect(jsonPath("$.message", is("テスト用リソースが見つかりません。")));
     }
 
     @Test
@@ -57,7 +57,7 @@ class GlobalExceptionHandlerTest {
         mockMvc.perform(get("/test-exceptions/type-mismatch/{id}", "not-a-uuid"))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.status", is(400)))
-            .andExpect(jsonPath("$.message", is("Invalid product ID format. Please provide a valid UUID.")));
+            .andExpect(jsonPath("$.message", is("商品IDの形式が無効です。有効なUUIDを指定してください。")));
     }
 
     @Test
@@ -65,7 +65,7 @@ class GlobalExceptionHandlerTest {
         mockMvc.perform(get("/test-exceptions/generic"))
             .andExpect(status().isInternalServerError())
             .andExpect(jsonPath("$.status", is(500)))
-            .andExpect(jsonPath("$.message", is("An unexpected error occurred.")))
-            .andExpect(jsonPath("$.details", is("A generic error occurred")));
+            .andExpect(jsonPath("$.message", is("予期せぬエラーが発生しました。")))
+            .andExpect(jsonPath("$.details", is("一般的なエラーが発生しました。")));
     }
 }

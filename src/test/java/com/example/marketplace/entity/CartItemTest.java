@@ -43,7 +43,7 @@ class CartItemTest {
         CartItem item = new CartItem(UUID.randomUUID(), product, 1, null);
         Set<ConstraintViolation<CartItem>> violations = validator.validate(item);
         assertFalse(violations.isEmpty());
-        assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("Cart must be provided to create a cartItem")));
+        assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("カート項目を作成するには、カートが必要です。")));
     }
 
     @Test
@@ -51,7 +51,7 @@ class CartItemTest {
         CartItem item = new CartItem(UUID.randomUUID(), null, 1, cart);
         Set<ConstraintViolation<CartItem>> violations = validator.validate(item);
         assertFalse(violations.isEmpty());
-        assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("Product must be provided to create a cartItem")));
+        assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("カート項目を作成するには、商品が必要です。")));
     }
 
     @Test
@@ -59,6 +59,6 @@ class CartItemTest {
         CartItem item = new CartItem(UUID.randomUUID(), product, 0, cart);
         Set<ConstraintViolation<CartItem>> violations = validator.validate(item);
         assertFalse(violations.isEmpty());
-        assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("Quantity must be greater than 0")));
+        assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("数量は0より大きい値である必要があります。")));
     }
 }

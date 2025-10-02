@@ -25,7 +25,24 @@ public class ProductServiceImpl implements ProductService {
 	@Override
 	public Product findById(UUID id) {
 		return productRepository.findById(id)
-			.orElseThrow(() -> new NotFoundException("Product not found with ID: " + id));
+			.orElseThrow(() -> new NotFoundException(id + " の商品が見つかりません。"));
+	}
+
+	@Override
+	public void reduceStock(UUID productId, int quantity) {
+		if (quantity <= 0) {
+			throw new IllegalArgumentException("削減する数量は、0より大きい値である必要があります。");
+		}
+		
+		Product product = productRepository.findById(productId)
+			.orElseThrow(() -> new NotFoundException(productId + " の商品が見つかりません。"));
+		
+		if (product.getStock() < quantity) {
+			throw new IllegalArgumentException("在庫不足です。在庫数: " + product.getStock() + ", ご要望数: " + quantity);
+		}
+		
+		product.setStock(product.getStock() - quantity);
+		productRepository.save(product);
 	}
 
 	@Override

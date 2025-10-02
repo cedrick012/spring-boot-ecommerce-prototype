@@ -80,7 +80,7 @@ class ProductControllerTest {
     @Test
     void getProductById_shouldReturnNotFound_whenProductDoesNotExist() throws Exception {
         UUID productId = UUID.randomUUID();
-        when(productService.findById(productId)).thenThrow(new NotFoundException("Product not found"));
+        when(productService.findById(productId)).thenThrow(new NotFoundException("商品が見つかりません。"));
 
         mockMvc.perform(get("/api/products/{id}", productId))
             .andExpect(status().isNotFound());
@@ -107,7 +107,7 @@ class ProductControllerTest {
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.message").value("Invalid product ID format. Please provide a valid UUID."));
+                .andExpect(jsonPath("$.message").value("商品IDの形式が無効です。有効なUUIDを指定してください。"));
 
         verify(productService, never()).findById(any());
     }
