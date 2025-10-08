@@ -1,12 +1,5 @@
 package com.example.marketplace.entity;
 
-import java.util.UUID;
-
-import org.hibernate.annotations.UuidGenerator;
-
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -14,16 +7,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Entity
-@Table(name = "products")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class Product {
-	@Id
-	@UuidGenerator
-	private UUID id;
+	private Long id;
 
 	@NotBlank(message = "商品名は空欄にできません。")
 	private String name;

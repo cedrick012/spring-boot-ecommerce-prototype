@@ -1,7 +1,5 @@
 package com.example.marketplace.controller;
 
-import java.util.UUID;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -29,7 +27,7 @@ public class CartController {
     private final CartService cartService;
 
     @GetMapping("/{id}")
-    public Cart getCart(@PathVariable UUID id) {
+    public Cart getCart(@PathVariable Long id) {
         return cartService.getCart(id);
     }
     
@@ -40,7 +38,7 @@ public class CartController {
     
     @PostMapping("/{id}/add-product")
     public Cart addProductToCart(
-    		@PathVariable UUID id,
+    		@PathVariable Long id,
     		@Valid @RequestBody AddToCartRequest bodyDto) {
         return cartService.addProductToCart(id, bodyDto.getProductId(), bodyDto.getQuantity());
     }
@@ -61,7 +59,7 @@ public class CartController {
     }
     
     @DeleteMapping("/{id}/checkout")
-    public ResponseEntity<?> checkout(@PathVariable UUID id) {
+    public ResponseEntity<?> checkout(@PathVariable Long id) {
         CheckoutResult result = cartService.checkout(id);
         
         if (result.isSuccess()) {

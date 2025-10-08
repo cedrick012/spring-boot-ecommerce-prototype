@@ -21,7 +21,6 @@ import com.example.marketplace.exception.NotFoundException;
 import com.example.marketplace.service.CartService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.HashSet;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,20 +42,20 @@ class CartControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    private UUID cartId;
-    private UUID productId;
+    private Long cartId;
+    private Long productId;
     private Cart cart;
     private MockHttpSession session;
 
     @BeforeEach
     void setUp() {
-        cartId = UUID.randomUUID();
-        productId = UUID.randomUUID();
+        cartId = 1L;
+        productId = 1L;
         cart = new Cart(cartId, "test-session-id", null, null, new HashSet<>());
         session = new MockHttpSession(null, "test-session-id");
     }
 
-    private String createAddToCartRequestBody(UUID productId, int quantity) throws Exception {
+    private String createAddToCartRequestBody(Long productId, int quantity) throws Exception {
         AddToCartRequest request = new AddToCartRequest();
         request.setProductId(productId);
         request.setQuantity(quantity);
@@ -69,7 +68,7 @@ class CartControllerTest {
 
         mockMvc.perform(get("/api/carts/{id}", cartId))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.id").value(cartId.toString()));
+            .andExpect(jsonPath("$.id").value(cartId.intValue()));
 
         verify(cartService).getCart(cartId);
     }
@@ -90,7 +89,7 @@ class CartControllerTest {
 
         mockMvc.perform(post("/api/carts"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.id").value(cartId.toString()));
+            .andExpect(jsonPath("$.id").value(cartId.intValue()));
 
         verify(cartService).getCart(null);
     }
@@ -99,20 +98,24 @@ class CartControllerTest {
     void addProductToCart_shouldReturnUpdatedCart_whenRequestIsValid() throws Exception {
         when(cartService.addProductToCart(cartId, productId, 2)).thenReturn(cart);
 
+        String requestBody = createAddToCartRequestBody(productId, 2);
+
         mockMvc.perform(post("/api/carts/{id}/add-product", cartId)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(createAddToCartRequestBody(productId, 2)))
+                .content(requestBody))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.id").value(cartId.toString()));
+            .andExpect(jsonPath("$.id").value(cartId.intValue()));
 
         verify(cartService).addProductToCart(cartId, productId, 2);
     }
 
     @Test
-    void addProductToCart_shouldReturnBadRequest_whenBodyIsInvalid() throws Exception {
+    void addProductToCart_shouldReturnBadRequest_whenQuantityIsInvalid() throws Exception {
+        String requestBody = createAddToCartRequestBody(productId, 0);
+
         mockMvc.perform(post("/api/carts/{id}/add-product", cartId)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"quantity\": 0}")) // Invalid quantity and missing productId
+                .content(requestBody))
             .andExpect(status().isBadRequest());
 
         verify(cartService, never()).addProductToCart(any(), any(), anyInt());

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.marketplace.mapper.ProductMapper">
+
+    <select id="findAll" resultType="com.example.marketplace.entity.Product">
+        SELECT * FROM products
+    </select>
+
+    <select id="findById" parameterType="long" resultType="com.example.marketplace.entity.Product">
+        SELECT * FROM products WHERE id = #{id}
+    </select>
+
+    <update id="update" parameterType="com.example.marketplace.entity.Product">
+        UPDATE products
+        SET
+            name = #{name},
+            description = #{description},
+            price = #{price},
+            stock = #{stock}
+        WHERE id = #{id}
+    </update>
+
+    <insert id="save" parameterType="com.example.marketplace.entity.Product">
+        <selectKey keyProperty="id" resultType="long" order="BEFORE">
+            SELECT NEXTVAL('product_id_seq')
+        </selectKey>
+        INSERT INTO products (id, name, description, price, stock)
+        VALUES (#{id}, #{name}, #{description}, #{price}, #{stock})
+
+</mapper>

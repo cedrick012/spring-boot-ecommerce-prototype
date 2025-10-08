@@ -18,14 +18,13 @@ import com.example.marketplace.entity.Cart;
 import com.example.marketplace.entity.CartItem;
 import com.example.marketplace.entity.Product;
 import com.example.marketplace.exception.NotFoundException;
-import com.example.marketplace.repository.CartItemRepository;
-import com.example.marketplace.repository.CartRepository;
-import com.example.marketplace.repository.ProductRepository;
+import com.example.marketplace.mapper.CartItemMapper;
+import com.example.marketplace.mapper.CartMapper;
+import com.example.marketplace.mapper.ProductMapper;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,13 +36,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class CartServiceImplTest {
 
     @Mock
-    private CartRepository cartRepository;
+    private CartMapper cartMapper;
 
     @Mock
-    private ProductRepository productRepository;
+    private ProductMapper productMapper;
 
     @Mock
-    private CartItemRepository cartItemRepository;
+    private CartItemMapper cartItemMapper;
 
     @Mock
     private ProductService productService;
@@ -51,15 +50,15 @@ class CartServiceImplTest {
     @InjectMocks
     private CartServiceImpl cartService;
 
-    private UUID cartId;
-    private UUID productId;
+    private Long cartId;
+    private Long productId;
     private Cart cart;
     private Product product;
 
     @BeforeEach
     void setUp() {
-        cartId = UUID.randomUUID();
-        productId = UUID.randomUUID();
+        cartId = 1L;
+        productId = 1L;
         cart = new Cart();
         cart.setId(cartId);
         cart.setSessionId("test-session");
@@ -69,14 +68,14 @@ class CartServiceImplTest {
 
     @Test
     void addProductToCart_shouldAddNewItem_whenCartIsEmpty() {
-        when(cartRepository.findById(cartId)).thenReturn(Optional.of(cart));
-        when(productRepository.findById(productId)).thenReturn(Optional.of(product));
-        when(cartItemRepository.findByCartAndProduct(cart, product)).thenReturn(Optional.empty());
-        when(cartRepository.findById(cartId)).thenReturn(Optional.of(cart));
+        when(cartMapper.findById(cartId)).thenReturn(Optional.of(cart));
+        when(productMapper.findById(productId)).thenReturn(Optional.of(product));
+        when(cartItemMapper.findByCartIdAndProductId(cart.getId(), product.getId())).thenReturn(Optional.empty());
+        when(cartMapper.findById(cartId)).thenReturn(Optional.of(cart));
 
         cartService.addProductToCart(cartId, productId, 5);
 
-        verify(cartItemRepository).save(argThat(item ->
+        verify(cartItemMapper).save(argThat(item ->
             item.getCart().equals(cart) &&
             item.getProduct().equals(product) &&
             item.getQuantity() == 5
@@ -86,21 +85,137 @@ class CartServiceImplTest {
     @Test
     void addProductToCart_shouldUpdateQuantity_whenItemExists() {
         CartItem existingItem = new CartItem();
-        existingItem.setId(UUID.randomUUID());
+        existingItem.setId(1L);
         existingItem.setCart(cart);
         existingItem.setProduct(product);
         existingItem.setQuantity(2);
 
-        when(cartRepository.findById(cartId)).thenReturn(Optional.of(cart));
-        when(productRepository.findById(productId)).thenReturn(Optional.of(product));
-        when(cartItemRepository.findByCartAndProduct(cart, product)).thenReturn(Optional.of(existingItem));
-        when(cartRepository.findById(cartId)).thenReturn(Optional.of(cart));
+        when(cartMapper.findById(cartId)).thenReturn(Optional.of(cart));
+        when(productMapper.findById(productId)).thenReturn(Optional.of(product));
+        when(cartItemMapper.findByCartIdAndProductId(cart.getId(), product.getId())).thenReturn(Optional.of(existingItem));
+        when(cartMapper.findById(cartId)).thenReturn(Optional.of(cart));
 
         cartService.addProductToCart(cartId, productId, 3);
 
-        assertEquals(5, existingItem.getQuantity());
-        verify(cartItemRepository).save(existingItem);
+        verify(cartItemMapper).update(argThat(item ->
+            item.getId().equals(existingItem.getId()) &&
+            item.getQuantity() == 5
+        ));
     }
+
+    @Test
+    void addProductToCart_shouldThrowException_whenQuantityIsNegative() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            cartService.addProductToCart(cartId, productId, -1);
+        });
+    }
+
+    @Test
+    void addProductToCart_shouldThrowException_whenCartNotFound() {
+        when(cartMapper.findById(cartId)).thenReturn(Optional.empty());
+        assertThrows(NotFoundException.class, () -> {
+            cartService.addProductToCart(cartId, productId, 1);
+        });
+    }
+
+    @Test
+    void addProductToCart_shouldThrowException_whenProductNotFound() {
+        when(cartMapper.findById(cartId)).thenReturn(Optional.of(cart));
+        when(productMapper.findById(productId)).thenReturn(Optional.empty());
+        assertThrows(NotFoundException.class, () -> {
+            cartService.addProductToCart(cartId, productId, 1);
+        });
+    }
+
+    @Test
+    void addProductToCart_shouldThrowException_whenStockIsInsufficient() {
+        product.setStock(5);
+        when(cartMapper.findById(cartId)).thenReturn(Optional.of(cart));
+        when(productMapper.findById(productId)).thenReturn(Optional.of(product));
+        when(cartItemMapper.findByCartIdAndProductId(cart.getId(), product.getId())).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            cartService.addProductToCart(cartId, productId, 10);
+        });
+    }
+
+    @Test
+    void getOrCreateCartBySession_shouldReturnExistingCart() {
+        when(cartMapper.findBySessionId("test-session")).thenReturn(List.of(cart));
+        Cart result = cartService.getOrCreateCartBySession("test-session");
+        assertEquals(cart, result);
+        verify(cartMapper, never()).save(any(Cart.class));
+    }
+
+    @Test
+    void getOrCreateCartBySession_shouldCreateNewCart() {
+        when(cartMapper.findBySessionId("new-session")).thenReturn(List.of());
+        
+        Cart result = cartService.getOrCreateCartBySession("new-session");
+
+        assertNotNull(result);
+        assertEquals("new-session", result.getSessionId());
+        verify(cartMapper).save(any(Cart.class));
+    }
+
+    @Test
+    void getCart_shouldReturnCart_whenExists() {
+        when(cartMapper.findById(cartId)).thenReturn(Optional.of(cart));
+        Cart result = cartService.getCart(cartId);
+        assertEquals(cart, result);
+    }
+
+    @Test
+    void getCart_shouldThrowException_whenNotExists() {
+        when(cartMapper.findById(cartId)).thenReturn(Optional.empty());
+        assertThrows(NotFoundException.class, () -> {
+            cartService.getCart(cartId);
+        });
+    }
+
+    @Test
+    void checkout_shouldSucceed_whenStockIsSufficient() {
+        CartItem item1 = new CartItem(1L, product, 2, cart);
+        Set<CartItem> items = new HashSet<>();
+        items.add(item1);
+        cart.setItems(items);
+
+        when(cartMapper.findById(cartId)).thenReturn(Optional.of(cart));
+        doNothing().when(productService).reduceStock(product.getId(), 2);
+        doNothing().when(cartMapper).deleteById(cartId);
+
+        CheckoutResult result = cartService.checkout(cartId);
+
+        assertTrue(result.isSuccess());
+        assertEquals("精算が完了しました！ご注文が確定されました。", result.getMessage());
+        verify(productService).reduceStock(product.getId(), 2);
+        verify(cartMapper).deleteById(cartId);
+    }
+
+    @Test
+    void checkout_shouldFail_whenStockIsInsufficient() {
+        CartItem item1 = new CartItem(1L, product, 25, cart);
+        Set<CartItem> items = new HashSet<>();
+        items.add(item1);
+        cart.setItems(items);
+
+        when(cartMapper.findById(cartId)).thenReturn(Optional.of(cart));
+        
+        CheckoutResult result = cartService.checkout(cartId);
+
+        assertFalse(result.isSuccess());
+        assertTrue(result.getMessage().contains("在庫不足のため、精算に失敗しました。"));
+        verify(productService, never()).reduceStock(any(Long.class), any(Integer.class));
+        verify(cartMapper, never()).deleteById(any(Long.class));
+    }
+
+    @Test
+    void checkout_shouldThrowException_whenCartNotFound() {
+    	CheckoutResult result = cartService.checkout(10000000000000L);
+    	
+    	assertTrue(!result.isSuccess());
+    }
+
 
     @Test
     void addProductToCart_shouldThrowException_whenQuantityIsZero() {
@@ -109,26 +224,12 @@ class CartServiceImplTest {
         assertEquals("数量は0より大きい値である必要があります。", exception.getMessage());
     }
 
-    @Test
-    void addProductToCart_shouldThrowException_whenCartNotFound() {
-        when(cartRepository.findById(cartId)).thenReturn(Optional.empty());
-        assertThrows(NotFoundException.class, () ->
-            cartService.addProductToCart(cartId, productId, 1));
-    }
-
-    @Test
-    void addProductToCart_shouldThrowException_whenProductNotFound() {
-        when(cartRepository.findById(cartId)).thenReturn(Optional.of(cart));
-        when(productRepository.findById(productId)).thenReturn(Optional.empty());
-        assertThrows(NotFoundException.class, () ->
-            cartService.addProductToCart(cartId, productId, 1));
-    }
 
     @Test
     void addProductToCart_shouldThrowException_whenInsufficientStock() {
         product.setStock(5);
-        when(cartRepository.findById(cartId)).thenReturn(Optional.of(cart));
-        when(productRepository.findById(productId)).thenReturn(Optional.of(product));
+        when(cartMapper.findById(cartId)).thenReturn(Optional.of(cart));
+        when(productMapper.findById(productId)).thenReturn(Optional.of(product));
 
         Exception exception = assertThrows(IllegalArgumentException.class, () ->
             cartService.addProductToCart(cartId, productId, 10));
@@ -136,34 +237,11 @@ class CartServiceImplTest {
     }
 
     // Tests for getOrCreateCartBySession
-    @Test
-    void getOrCreateCartBySession_shouldReturnExistingCart() {
-        when(cartRepository.findBySessionId("test-session")).thenReturn(List.of(cart));
-        Cart result = cartService.getOrCreateCartBySession("test-session");
-        assertEquals(cart, result);
-        verify(cartRepository, never()).save(any());
-    }
-
-    @Test
-    void getOrCreateCartBySession_shouldCreateNewCart() {
-        when(cartRepository.findBySessionId("new-session")).thenReturn(List.of());
-        when(cartRepository.save(any(Cart.class))).thenAnswer(invocation -> {
-            Cart savedCart = invocation.getArgument(0);
-            savedCart.setId(UUID.randomUUID()); // Simulate DB generating an ID
-            return savedCart;
-        });
-
-        Cart result = cartService.getOrCreateCartBySession("new-session");
-
-        assertNotNull(result);
-        assertEquals("new-session", result.getSessionId());
-        verify(cartRepository, times(1)).save(any(Cart.class));
-    }
 
     // Tests for getCart
     @Test
     void getCart_shouldReturnCart_whenIdExists() {
-        when(cartRepository.findById(cartId)).thenReturn(Optional.of(cart));
+        when(cartMapper.findById(cartId)).thenReturn(Optional.of(cart));
         Cart result = cartService.getCart(cartId);
         assertEquals(cart, result);
     }
@@ -175,7 +253,7 @@ class CartServiceImplTest {
 
     @Test
     void getCart_shouldThrowException_whenIdNotFound() {
-        when(cartRepository.findById(cartId)).thenReturn(Optional.empty());
+        when(cartMapper.findById(cartId)).thenReturn(Optional.empty());
         assertThrows(NotFoundException.class, () -> cartService.getCart(cartId));
     }
 
@@ -183,25 +261,25 @@ class CartServiceImplTest {
     @Test
     void checkout_shouldSucceed_whenCartIsValid() {
         CartItem item = new CartItem();
-        item.setId(UUID.randomUUID());
+        item.setId(1L);
         item.setCart(cart);
         item.setProduct(product);
         item.setQuantity(2);
         cart.setItems(Set.of(item));
 
-        when(cartRepository.findById(cartId)).thenReturn(Optional.of(cart));
+        when(cartMapper.findById(cartId)).thenReturn(Optional.of(cart));
         doNothing().when(productService).reduceStock(productId, 2);
 
         CheckoutResult result = cartService.checkout(cartId);
 
         assertTrue(result.isSuccess());
         verify(productService, times(1)).reduceStock(productId, 2);
-        verify(cartRepository, times(1)).delete(cart);
+        verify(cartMapper, times(1)).deleteById(cartId);
     }
 
     @Test
     void checkout_shouldFail_whenCartIsEmpty() {
-        when(cartRepository.findById(cartId)).thenReturn(Optional.of(cart));
+        when(cartMapper.findById(cartId)).thenReturn(Optional.of(cart));
         CheckoutResult result = cartService.checkout(cartId);
         assertFalse(result.isSuccess());
         assertEquals("空のカートは精算できません。", result.getMessage());
@@ -209,7 +287,7 @@ class CartServiceImplTest {
 
     @Test
     void checkout_shouldFail_whenCartNotFound() {
-        when(cartRepository.findById(cartId)).thenReturn(Optional.empty());
+        when(cartMapper.findById(cartId)).thenReturn(Optional.empty());
         CheckoutResult result = cartService.checkout(cartId);
         assertFalse(result.isSuccess());
         assertTrue(result.getMessage().contains("カートが見つかりません。"));
@@ -219,13 +297,13 @@ class CartServiceImplTest {
     void checkout_shouldFail_whenInsufficientStock() {
         product.setStock(1);
         CartItem item = new CartItem();
-        item.setId(UUID.randomUUID());
+        item.setId(1L);
         item.setCart(cart);
         item.setProduct(product);
         item.setQuantity(2);
         cart.setItems(Set.of(item));
 
-        when(cartRepository.findById(cartId)).thenReturn(Optional.of(cart));
+        when(cartMapper.findById(cartId)).thenReturn(Optional.of(cart));
 
         CheckoutResult result = cartService.checkout(cartId);
 
@@ -233,6 +311,6 @@ class CartServiceImplTest {
         assertTrue(result.getMessage().contains("在庫不足のため、精算に失敗しました。"));
         assertEquals(1, result.getErrors().size());
         verify(productService, never()).reduceStock(any(), any(Integer.class));
-        verify(cartRepository, never()).delete(any());
+        verify(cartMapper, never()).deleteById(cartId);
     }
 }

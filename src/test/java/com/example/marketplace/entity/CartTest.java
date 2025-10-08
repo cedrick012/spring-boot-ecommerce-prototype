@@ -10,7 +10,6 @@ import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 import java.math.BigDecimal;
 import java.util.Set;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -27,7 +26,7 @@ class CartTest {
     @Test
     void shouldBeValid_whenSessionIdIsPresent() {
         Cart cart = new Cart();
-        cart.setId(UUID.randomUUID());
+        cart.setId(1L);
         cart.setSessionId("valid-session-id");
 
         Set<ConstraintViolation<Cart>> violations = validator.validate(cart);
@@ -38,7 +37,7 @@ class CartTest {
     @Test
     void shouldBeInvalid_whenSessionIdIsBlank() {
         Cart cart = new Cart();
-        cart.setId(UUID.randomUUID());
+        cart.setId(1L);
         cart.setSessionId(" ");
 
         Set<ConstraintViolation<Cart>> violations = validator.validate(cart);
@@ -51,8 +50,8 @@ class CartTest {
     void shouldCorrectlyAddItem() {
         Cart cart = new Cart();
         cart.setSessionId("session-1");
-        Product product = new Product(UUID.randomUUID(), "Test Product", 10.0, "Desc", 10);
-        CartItem item = new CartItem(UUID.randomUUID(), product, 1, cart);
+        Product product = new Product(1L, "Test Product", 10.0, "Desc", 10);
+        CartItem item = new CartItem(1L, product, 1, cart);
 
         cart.getItems().add(item);
 

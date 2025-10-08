@@ -1,10 +1,9 @@
 package com.example.marketplace.service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,9 +13,9 @@ import com.example.marketplace.entity.Cart;
 import com.example.marketplace.entity.CartItem;
 import com.example.marketplace.entity.Product;
 import com.example.marketplace.exception.NotFoundException;
-import com.example.marketplace.repository.CartItemRepository;
-import com.example.marketplace.repository.CartRepository;
-import com.example.marketplace.repository.ProductRepository;
+import com.example.marketplace.mapper.CartItemMapper;
+import com.example.marketplace.mapper.CartMapper;
+import com.example.marketplace.mapper.ProductMapper;
 
 import lombok.RequiredArgsConstructor;
 
@@ -24,61 +23,51 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CartServiceImpl implements CartService {
 
-    private final CartRepository cartRepository;
-    private final ProductRepository productRepository;
-    private final CartItemRepository cartItemRepository;
+    private final CartMapper cartMapper;
+    private final ProductMapper productMapper;
+    private final CartItemMapper cartItemMapper;
     private final ProductService productService;
     
     @Override
-    public Cart addProductToCart(UUID cartId, UUID productId, int quantity) {
+    @Transactional
+    public Cart addProductToCart(Long cartId, Long productId, int quantity) {
         if (quantity <= 0) {
             throw new IllegalArgumentException("数量は0より大きい値である必要があります。");
         }
         
-        Cart cart = cartRepository.findById(cartId)
+        Cart cart = cartMapper.findById(cartId)
             .orElseThrow(() -> new NotFoundException(cartId + " のカートが見つかりません。"));
         
-        Product product = productRepository.findById(productId)
+        Product product = productMapper.findById(productId)
                 .orElseThrow(() -> new NotFoundException(productId + " の商品が見つかりません。"));
         
-        Optional<CartItem> existingCartItem = cartItemRepository.findByCartAndProduct(cart, product);
+        Optional<CartItem> existingCartItemOpt = cartItemMapper.findByCartIdAndProductId(cart.getId(), product.getId());
 
-        // Check if there's enough stock
-        int currentCartItemQuantity = existingCartItem.map(CartItem::getQuantity).orElse(0);
+        int currentCartItemQuantity = existingCartItemOpt.map(CartItem::getQuantity).orElse(0);
         
         if (currentCartItemQuantity + quantity > product.getStock()) {
             throw new IllegalArgumentException("在庫不足です。在庫: " + 
                 (product.getStock() - currentCartItemQuantity) + ", ご要望: " + quantity);
         }
 
-        if (existingCartItem.isPresent()) {
-            // Update existing item quantity
-            CartItem item = existingCartItem.get();
+        if (existingCartItemOpt.isPresent()) {
+            CartItem item = existingCartItemOpt.get();
             item.setQuantity(item.getQuantity() + quantity);
-            cartItemRepository.save(item);
-            
-            existingCartItem = Optional.of(item);
+            cartItemMapper.update(item);
         } else {
-            // Create new cart item
             CartItem newItem = new CartItem();
             newItem.setCart(cart);
             newItem.setProduct(product);
             newItem.setQuantity(quantity);
-            cartItemRepository.save(newItem);
-            
-            existingCartItem = Optional.of(newItem);
+            cartItemMapper.save(newItem);
         }
         
-        Set<CartItem> existingItems = cart.getItems();
-        existingItems.add(existingCartItem.get());
-        cart.setItems(existingItems);
-        
-        return cart;
+        return getCart(cartId);
     }
 
     @Override
     public Cart getOrCreateCartBySession(String sessionId) {
-        return cartRepository.findBySessionId(sessionId)
+        return cartMapper.findBySessionId(sessionId)
         	    .stream()
         	    .findFirst()
         	    .orElseGet(() -> createNewCart(sessionId));
@@ -87,23 +76,26 @@ public class CartServiceImpl implements CartService {
     private Cart createNewCart(String sessionId) {
         Cart newCart = new Cart();
         newCart.setSessionId(sessionId);
-        return cartRepository.save(newCart);
+        newCart.setCreatedAt(LocalDateTime.now());
+        newCart.setUpdatedAt(LocalDateTime.now());
+        cartMapper.save(newCart);
+        return newCart;
     }
 
     @Override
-    public Cart getCart(UUID cartId) {
+    public Cart getCart(Long cartId) {
         if (cartId == null) {
             throw new IllegalArgumentException("カートIDはNULLにできません。");
         }
-        return cartRepository.findById(cartId)
+        return cartMapper.findById(cartId)
             .orElseThrow(() -> new NotFoundException(cartId + " のカートが見つかりません。"));
     }
     
     @Override
     @Transactional
-    public CheckoutResult checkout(UUID cartId) {
+    public CheckoutResult checkout(Long cartId) {
         try {
-            Cart cart = cartRepository.findById(cartId)
+            Cart cart = cartMapper.findById(cartId)
                 .orElseThrow(() -> new NotFoundException(cartId + " のカートが見つかりません。"));
             
             if (cart.getItems().isEmpty()) {
@@ -112,7 +104,6 @@ public class CartServiceImpl implements CartService {
             
             List<String> errors = new ArrayList<>();
             
-            // First, validate all items have sufficient stock
             for (CartItem item : cart.getItems()) {
                 Product product = item.getProduct();
                 if (product.getStock() < item.getQuantity()) {
@@ -121,18 +112,15 @@ public class CartServiceImpl implements CartService {
                 }
             }
             
-            // If any stock validation failed, return error
             if (!errors.isEmpty()) {
                 return CheckoutResult.failure("在庫不足のため、精算に失敗しました。", errors);
             }
             
-            // Reduce stock for all items
             for (CartItem item : cart.getItems()) {
                 productService.reduceStock(item.getProduct().getId(), item.getQuantity());
             }
             
-            // Delete the cart after successful stock reduction
-            cartRepository.delete(cart);
+            cartMapper.deleteById(cart.getId());
             
             return CheckoutResult.success("精算が完了しました！ご注文が確定されました。");
             
@@ -141,6 +129,8 @@ public class CartServiceImpl implements CartService {
         } catch (IllegalArgumentException e) {
             return CheckoutResult.failure("精算に失敗しました: " + e.getMessage());
         } catch (Exception e) {
+            // Log the exception for debugging
+            // logger.error("Unexpected error during checkout", e);
             return CheckoutResult.failure("精算中に予期せぬエラーが発生しました。");
         }
     }
