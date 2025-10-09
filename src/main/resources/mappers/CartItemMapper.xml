@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.marketplace.mapper.CartItemMapper">
+
+    <resultMap id="cartItemResultMap" type="com.example.marketplace.entity.CartItem">
+        <id property="id" column="item_id"/>
+        <result property="quantity" column="item_quantity"/>
+        <association property="product" javaType="com.example.marketplace.entity.Product">
+            <id property="id" column="product_id"/>
+            <result property="name" column="product_name"/>
+            <result property="description" column="product_description"/>
+            <result property="price" column="product_price"/>
+            <result property="stock" column="product_stock"/>
+        </association>
+    </resultMap>
+
+    <select id="findByCartId" parameterType="long" resultMap="cartItemResultMap">
+        SELECT
+            ci.id as item_id,
+            ci.quantity as item_quantity,
+            p.id as product_id,
+            p.name as product_name,
+            p.description as product_description,
+            p.price as product_price,
+            p.stock as product_stock
+        FROM cart_items ci
+        JOIN products p ON ci.product_id = p.id
+        WHERE ci.cart_id = #{cartId}
+    </select>
+
+    <select id="findByCartIdAndProductId" resultMap="cartItemResultMap">
+        SELECT
+            ci.id as item_id,
+            ci.quantity as item_quantity,
+            p.id as product_id,
+            p.name as product_name,
+            p.description as product_description,
+            p.price as product_price,
+            p.stock as product_stock
+        FROM cart_items ci
+        JOIN products p ON ci.product_id = p.id
+        WHERE ci.cart_id = #{cartId} AND ci.product_id = #{productId}
+    </select>
+
+    <insert id="save" parameterType="com.example.marketplace.entity.CartItem">
+        <selectKey keyProperty="id" resultType="long" order="BEFORE">
+            SELECT NEXTVAL('cart_item_id_seq')
+        </selectKey>
+        INSERT INTO cart_items (id, cart_id, product_id, quantity)
+        VALUES (#{id}, #{cart.id}, #{product.id}, #{quantity})
+    </insert>
+
+    <update id="update" parameterType="com.example.marketplace.entity.CartItem">
+        UPDATE cart_items
+        SET quantity = #{quantity}
+        WHERE id = #{id}
+    </update>
+
+</mapper>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.marketplace.mapper.CartMapper">
+
+    <resultMap id="cartResultMap" type="com.example.marketplace.entity.Cart">
+        <id property="id" column="id"/>
+        <result property="sessionId" column="session_id"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <collection property="items" ofType="com.example.marketplace.entity.CartItem"
+                    select="com.example.marketplace.mapper.CartItemMapper.findByCartId" column="id"/>
+    </resultMap>
+
+    <select id="findById" parameterType="long" resultMap="cartResultMap">
+        SELECT * FROM carts WHERE id = #{id}
+    </select>
+
+    <select id="findBySessionId" parameterType="string" resultMap="cartResultMap">
+        SELECT * FROM carts WHERE session_id = #{sessionId}
+    </select>
+
+    <insert id="save" parameterType="com.example.marketplace.entity.Cart">
+        <selectKey keyProperty="id" resultType="long" order="BEFORE">
+            SELECT NEXTVAL('cart_id_seq')
+        </selectKey>
+        INSERT INTO carts (id, session_id, created_at, updated_at)
+        VALUES (#{id}, #{sessionId}, NOW(), NOW())
+    </insert>
+
+    <delete id="deleteById" parameterType="long">
+        DELETE FROM carts WHERE id = #{id}
+    </delete>
+
+</mapper>

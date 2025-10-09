@@ -12,11 +12,10 @@ import static org.mockito.Mockito.when;
 
 import com.example.marketplace.entity.Product;
 import com.example.marketplace.exception.NotFoundException;
-import com.example.marketplace.repository.ProductRepository;
+import com.example.marketplace.mapper.ProductMapper;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,7 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ProductServiceImplTest {
 
     @Mock
-    private ProductRepository productRepository;
+    private ProductMapper productMapper;
 
     @InjectMocks
     private ProductServiceImpl productService;
@@ -38,15 +37,15 @@ class ProductServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        product1 = new Product(UUID.randomUUID(), "Laptop", 1499.99, "A powerful laptop", 12);
-        product2 = new Product(UUID.randomUUID(), "Mouse", 25.99, "Wireless mouse", 2);
+        product1 = new Product(1L, "Laptop", 1499.99, "A powerful laptop", 12);
+        product2 = new Product(2L, "Mouse", 25.99, "Wireless mouse", 2);
     }
 
     @Test
     void getAllProducts_ShouldReturnAllProducts() {
         // Given
         List<Product> expectedProducts = Arrays.asList(product1, product2);
-        when(productRepository.findAll()).thenReturn(expectedProducts);
+        when(productMapper.findAll()).thenReturn(expectedProducts);
 
         // When
         List<Product> actualProducts = productService.getAllProducts();
@@ -54,28 +53,28 @@ class ProductServiceImplTest {
         // Then
         assertEquals(2, actualProducts.size());
         assertEquals(expectedProducts, actualProducts);
-        verify(productRepository, times(1)).findAll();
+        verify(productMapper, times(1)).findAll();
     }
 
     @Test
     void getAllProducts_ShouldReturnEmptyList_WhenNoProducts() {
         // Given
-        when(productRepository.findAll()).thenReturn(Arrays.asList());
+        when(productMapper.findAll()).thenReturn(Arrays.asList());
 
         // When
         List<Product> actualProducts = productService.getAllProducts();
 
         // Then
         assertTrue(actualProducts.isEmpty());
-        verify(productRepository, times(1)).findAll();
+        verify(productMapper, times(1)).findAll();
     }
 
     @Test
     void findById_ShouldReturnProduct_WhenProductExists() {
         // Given
-        UUID productId = UUID.randomUUID();
+        Long productId = 1L;
         Product expectedProduct = new Product(productId, "Laptop", 1499.99, "A powerful laptop", 10);
-        when(productRepository.findById(productId)).thenReturn(Optional.of(expectedProduct));
+        when(productMapper.findById(productId)).thenReturn(Optional.of(expectedProduct));
 
         // When
         Product actualProduct = productService.findById(productId);
@@ -86,90 +85,90 @@ class ProductServiceImplTest {
         assertEquals(expectedProduct.getName(), actualProduct.getName());
         assertEquals(expectedProduct.getPrice(), actualProduct.getPrice());
         assertEquals(expectedProduct.getStock(), actualProduct.getStock());
-        verify(productRepository, times(1)).findById(productId);
+        verify(productMapper, times(1)).findById(productId);
     }
 
     @Test
     void findById_ShouldThrowNotFoundException_WhenProductDoesNotExist() {
         // Given
-        UUID productId = UUID.randomUUID();
-        when(productRepository.findById(productId)).thenReturn(Optional.empty());
+        Long productId = 1L;
+        when(productMapper.findById(productId)).thenReturn(Optional.empty());
 
         // When & Then
         NotFoundException exception = assertThrows(NotFoundException.class, 
             () -> productService.findById(productId));
         
         assertEquals(productId + " の商品が見つかりません。", exception.getMessage());
-        verify(productRepository, times(1)).findById(productId);
+        verify(productMapper, times(1)).findById(productId);
     }
 
     @Test
     void reduceStock_shouldUpdateStock_whenSufficientStockExists() {
         // Given
-        UUID productId = product1.getId();
+        Long productId = product1.getId();
         int initialStock = product1.getStock();
         int quantityToReduce = 5;
-        when(productRepository.findById(productId)).thenReturn(Optional.of(product1));
+        when(productMapper.findById(productId)).thenReturn(Optional.of(product1));
 
         // When
         productService.reduceStock(productId, quantityToReduce);
 
         // Then
-        verify(productRepository, times(1)).findById(productId);
-        verify(productRepository, times(1)).save(product1);
+        verify(productMapper, times(1)).findById(productId);
+        verify(productMapper, times(1)).update(product1);
         assertEquals(initialStock - quantityToReduce, product1.getStock());
     }
 
     @Test
     void reduceStock_shouldThrowException_whenInsufficientStock() {
         // Given
-        UUID productId = product2.getId();
+        Long productId = product2.getId();
         int quantityToReduce = 5; // More than available stock (2)
-        when(productRepository.findById(productId)).thenReturn(Optional.of(product2));
+        when(productMapper.findById(productId)).thenReturn(Optional.of(product2));
 
         // When & Then
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
             productService.reduceStock(productId, quantityToReduce));
 
         assertTrue(exception.getMessage().contains("在庫不足です。"));
-        verify(productRepository, never()).save(any());
+        verify(productMapper, never()).save(any());
     }
 
     @Test
     void reduceStock_shouldThrowException_whenProductNotFound() {
         // Given
-        UUID nonExistentProductId = UUID.randomUUID();
-        when(productRepository.findById(nonExistentProductId)).thenReturn(Optional.empty());
+        Long nonExistentProductId = 1L;
+        when(productMapper.findById(nonExistentProductId)).thenReturn(Optional.empty());
 
         // When & Then
         assertThrows(NotFoundException.class, () ->
             productService.reduceStock(nonExistentProductId, 1));
-        verify(productRepository, never()).save(any());
+        verify(productMapper, never()).save(any());
     }
 
     @Test
     void reduceStock_shouldThrowException_whenQuantityIsZero() {
         // Given
-        UUID productId = product1.getId();
+        Long productId = product1.getId();
 
         // When & Then
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
             productService.reduceStock(productId, 0));
 
         assertEquals("削減する数量は、0より大きい値である必要があります。", exception.getMessage());
-        verify(productRepository, never()).save(any());
+        verify(productMapper, never()).save(any());
     }
 
     @Test
     void reduceStock_shouldThrowException_whenQuantityIsNegative() {
         // Given
-        UUID productId = product1.getId();
+        Long productId = product1.getId();
 
         // When & Then
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
             productService.reduceStock(productId, -1));
 
         assertEquals("削減する数量は、0より大きい値である必要があります。", exception.getMessage());
-        verify(productRepository, never()).save(any());
+        verify(productMapper, never()).save(any());
     }
 }

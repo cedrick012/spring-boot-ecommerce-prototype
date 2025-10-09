@@ -13,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.validation.annotation.Validated;
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/products")
@@ -29,7 +28,7 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    public Product getProductById(@PathVariable @NotNull UUID id) {
+    public Product getProductById(@PathVariable @NotNull Long id) {
         if (id == null) {
             throw new IllegalArgumentException("Product ID cannot be null");
         }

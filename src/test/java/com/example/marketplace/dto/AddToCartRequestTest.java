@@ -9,7 +9,6 @@ import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 import java.util.Set;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -26,7 +25,7 @@ class AddToCartRequestTest {
     @Test
     void shouldBeValid_whenAllFieldsAreCorrect() {
         AddToCartRequest request = new AddToCartRequest();
-        request.setProductId(UUID.randomUUID());
+        request.setProductId(1L);
         request.setQuantity(10);
 
         Set<ConstraintViolation<AddToCartRequest>> violations = validator.validate(request);
@@ -54,7 +53,7 @@ class AddToCartRequestTest {
     @Test
     void shouldBeInvalid_whenQuantityIsZero() {
         AddToCartRequest request = new AddToCartRequest();
-        request.setProductId(UUID.randomUUID());
+        request.setProductId(1L);
         request.setQuantity(0);
 
         Set<ConstraintViolation<AddToCartRequest>> violations = validator.validate(request);
@@ -66,7 +65,7 @@ class AddToCartRequestTest {
     @Test
     void shouldBeInvalid_whenQuantityIsTooLarge() {
         AddToCartRequest request = new AddToCartRequest();
-        request.setProductId(UUID.randomUUID());
+        request.setProductId(1L);
         request.setQuantity(1000);
 
         Set<ConstraintViolation<AddToCartRequest>> violations = validator.validate(request);

@@ -16,7 +16,6 @@ import com.example.marketplace.service.CartService;
 import com.example.marketplace.service.ProductService;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -39,8 +38,8 @@ class ProductControllerTest {
 
     @Test
     void getAllProducts_shouldReturnListOfProducts() throws Exception {
-        Product product1 = new Product(UUID.randomUUID(), "Laptop", 1500.00, "High-end laptop", 10);
-        Product product2 = new Product(UUID.randomUUID(), "Mouse", 75.50, "Gaming mouse", 50);
+        Product product1 = new Product(1L, "Laptop", 1500.00, "High-end laptop", 10);
+        Product product2 = new Product(2L, "Mouse", 75.50, "Gaming mouse", 50);
         when(productService.getAllProducts()).thenReturn(List.of(product1, product2));
 
         mockMvc.perform(get("/api/products"))
@@ -65,13 +64,13 @@ class ProductControllerTest {
 
     @Test
     void getProductById_shouldReturnProduct_whenProductExists() throws Exception {
-        UUID productId = UUID.randomUUID();
+        Long productId = 1L;
         Product product = new Product(productId, "Keyboard", 120.00, "Mechanical keyboard", 25);
         when(productService.findById(productId)).thenReturn(product);
 
         mockMvc.perform(get("/api/products/{id}", productId))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.id", is(productId.toString())))
+            .andExpect(jsonPath("$.id", is(productId.intValue())))
             .andExpect(jsonPath("$.name", is("Keyboard")));
 
         verify(productService).findById(productId);
@@ -79,7 +78,7 @@ class ProductControllerTest {
 
     @Test
     void getProductById_shouldReturnNotFound_whenProductDoesNotExist() throws Exception {
-        UUID productId = UUID.randomUUID();
+        Long productId = 1L;
         when(productService.findById(productId)).thenThrow(new NotFoundException("商品が見つかりません。"));
 
         mockMvc.perform(get("/api/products/{id}", productId))

@@ -8,7 +8,6 @@ import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 import java.util.Set;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -24,14 +23,14 @@ class ProductTest {
 
     @Test
     void shouldBeValid_whenAllFieldsAreCorrect() {
-        Product product = new Product(UUID.randomUUID(), "Valid Product", 99.99, "A valid description", 10);
+        Product product = new Product(1L, "Valid Product", 99.99, "A valid description", 10);
         Set<ConstraintViolation<Product>> violations = validator.validate(product);
         assertTrue(violations.isEmpty());
     }
 
     @Test
     void shouldBeInvalid_whenNameIsBlank() {
-        Product product = new Product(UUID.randomUUID(), " ", 99.99, "A description", 10);
+        Product product = new Product(1L, " ", 99.99, "A description", 10);
         Set<ConstraintViolation<Product>> violations = validator.validate(product);
         assertFalse(violations.isEmpty());
         assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("商品名は空欄にできません。")));
@@ -39,7 +38,7 @@ class ProductTest {
 
     @Test
     void shouldBeInvalid_whenPriceIsZero() {
-        Product product = new Product(UUID.randomUUID(), "Product", 0.0, "A description", 10);
+        Product product = new Product(1L, "Product", 0.0, "A description", 10);
         Set<ConstraintViolation<Product>> violations = validator.validate(product);
         assertFalse(violations.isEmpty());
         assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("価格は0より大きい値である必要があります。")));
@@ -47,7 +46,7 @@ class ProductTest {
 
     @Test
     void shouldBeInvalid_whenStockIsNegative() {
-        Product product = new Product(UUID.randomUUID(), "Product", 99.99, "A description", -1);
+        Product product = new Product(1L, "Product", 99.99, "A description", -1);
         Set<ConstraintViolation<Product>> violations = validator.validate(product);
         assertFalse(violations.isEmpty());
         assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("在庫をマイナスにすることはできません。")));

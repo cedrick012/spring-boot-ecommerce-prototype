@@ -9,7 +9,6 @@ import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 import java.math.BigDecimal;
 import java.util.Set;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -25,22 +24,22 @@ class CartItemTest {
         validator = factory.getValidator();
 
         cart = new Cart();
-        cart.setId(UUID.randomUUID());
+        cart.setId(1L);
         cart.setSessionId("test-session");
 
-        product = new Product(UUID.randomUUID(), "Test Product", 10.99, "A description", 100);
+        product = new Product(1L, "Test Product", 10.99, "A description", 100);
     }
 
     @Test
     void shouldBeValid_whenAllFieldsAreCorrect() {
-        CartItem item = new CartItem(UUID.randomUUID(), product, 5, cart);
+        CartItem item = new CartItem(1L, product, 5, cart);
         Set<ConstraintViolation<CartItem>> violations = validator.validate(item);
         assertTrue(violations.isEmpty());
     }
 
     @Test
     void shouldBeInvalid_whenCartIsNull() {
-        CartItem item = new CartItem(UUID.randomUUID(), product, 1, null);
+        CartItem item = new CartItem(1L, product, 1, null);
         Set<ConstraintViolation<CartItem>> violations = validator.validate(item);
         assertFalse(violations.isEmpty());
         assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("カート項目を作成するには、カートが必要です。")));
@@ -48,7 +47,7 @@ class CartItemTest {
 
     @Test
     void shouldBeInvalid_whenProductIsNull() {
-        CartItem item = new CartItem(UUID.randomUUID(), null, 1, cart);
+        CartItem item = new CartItem(1L, null, 1, cart);
         Set<ConstraintViolation<CartItem>> violations = validator.validate(item);
         assertFalse(violations.isEmpty());
         assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("カート項目を作成するには、商品が必要です。")));
@@ -56,7 +55,7 @@ class CartItemTest {
 
     @Test
     void shouldBeInvalid_whenQuantityIsZero() {
-        CartItem item = new CartItem(UUID.randomUUID(), product, 0, cart);
+        CartItem item = new CartItem(1L, product, 0, cart);
         Set<ConstraintViolation<CartItem>> violations = validator.validate(item);
         assertFalse(violations.isEmpty());
         assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("数量は0より大きい値である必要があります。")));
