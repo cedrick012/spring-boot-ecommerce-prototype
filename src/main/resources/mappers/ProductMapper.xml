@@ -26,5 +26,5 @@
         </selectKey>
         INSERT INTO products (id, name, description, price, stock)
         VALUES (#{id}, #{name}, #{description}, #{price}, #{stock})
-
+    </insert>
 </mapper>
