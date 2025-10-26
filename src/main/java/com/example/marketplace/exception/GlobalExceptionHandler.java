@@ -13,9 +13,19 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import com.example.marketplace.dto.ErrorResponse;
 
+/**
+ * アプリケーション全体の例外ハンドリングを行うクラスです。
+ * 統一されたエラーレスポンス形式でクライアントに例外情報を返却します。
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    /**
+     * バリデーション例外を処理します。
+     *
+     * @param ex バリデーション例外
+     * @return エラーレスポンス（400 Bad Request）
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
