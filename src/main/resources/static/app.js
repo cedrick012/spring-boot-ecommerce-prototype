@@ -1,6 +1,5 @@
 class MarketplaceApp {
     constructor() {
-        // Remove cartId from localStorage since we're using sessions now
         this.products = [];
         this.cart = null;
         this.currentProduct = null;
@@ -8,7 +7,7 @@ class MarketplaceApp {
         this.initializeElements();
         this.attachEventListeners();
         this.loadProducts();
-        this.loadCart(); // Load cart by session
+        this.loadCart();
     }
 
     initializeElements() {
@@ -108,10 +107,9 @@ class MarketplaceApp {
 
             this.showNotification('チェックアウトが完了しました。ご注文ありがとうございます。', 'success');
             
-            // Reset cart and reload from session
             this.cart = null;
             this.updateCartCount();
-            await this.loadCart(); // Reload cart from session
+            await this.loadCart();
             this.showProducts();
         } catch (error) {
             this.showNotification('チェックアウトに失敗しました', 'error');
@@ -133,7 +131,6 @@ class MarketplaceApp {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                // Handle specific error cases
                 if (errorData.message && errorData.message.includes('Insufficient stock')) {
                     this.showNotification(errorData.message, 'error', 5000);
                 } else {
@@ -146,7 +143,6 @@ class MarketplaceApp {
             this.updateCartCount();
             this.showNotification(`${quantity}個の商品をカートに追加しました！`, 'success');
             
-            // Update stock display if we're on product detail page
             if (this.currentProduct && this.currentProduct.id === productId) {
                 this.refreshProductStock(productId);
             }
@@ -162,7 +158,7 @@ class MarketplaceApp {
             if (response.ok) {
                 const updatedProduct = await response.json();
                 this.currentProduct = updatedProduct;
-                this.renderProductDetail(); // Re-render with updated stock
+                this.renderProductDetail();
             }
         } catch (error) {
             console.error('Failed to refresh product stock:', error);
@@ -331,7 +327,6 @@ class MarketplaceApp {
         let isValid = true;
         let errorMessage = '';
 
-        // Check for existing items in cart for this product
         let existingQuantity = 0;
         if (this.cart && this.cart.items) {
             const existingItem = this.cart.items.find(item => item.product.id === this.currentProduct.id);
@@ -354,7 +349,6 @@ class MarketplaceApp {
             isValid = false;
         }
 
-        // Update UI
         if (quantityError) {
             quantityError.textContent = errorMessage;
             quantityError.classList.toggle('hidden', isValid);
@@ -444,10 +438,9 @@ class MarketplaceApp {
 
             this.showNotification('チェックアウトが完了しました。ご注文ありがとうございます。', 'success');
             
-            // Reset cart and reload from session
             this.cart = null;
             this.updateCartCount();
-            await this.loadCart(); // Reload cart from session
+            await this.loadCart();
             this.showProducts();
         } catch (error) {
             this.showNotification('チェックアウトに失敗しました', 'error');
@@ -478,7 +471,6 @@ class MarketplaceApp {
     }
 }
 
-// Initialize the app when the page loads
 let app;
 document.addEventListener('DOMContentLoaded', () => {
     app = new MarketplaceApp();
